@@ -1,0 +1,216 @@
+/* base.css — shared across all screens */
+
+:root {
+  --cream: #ebe2d2;
+  --cream-2: #d8cdba;
+  --cream-3: #f5ecdc;
+  --ink: #1c1815;
+  --ink-dim: #6b6258;
+  --accent: #b32a1f;
+  --accent-dim: #7a2018;
+  --hp-green: #6b8a4a;
+  --hp-yellow: #c9a040;
+  --hp-red: #b32a1f;
+  --shadow: rgba(28, 24, 21, 0.18);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  background: var(--cream);
+  color: var(--ink);
+  min-height: 100vh;
+  min-height: 100dvh;
+  font-family: 'Press Start 2P', 'JetBrains Mono', monospace;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+body {
+  position: relative;
+}
+
+/* paper grain */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 100;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 240 240' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.92' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.18'/%3E%3C/svg%3E");
+  mix-blend-mode: multiply;
+  opacity: 0.45;
+}
+
+/* vignette */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 99;
+  background: radial-gradient(ellipse at center, transparent 50%, rgba(28, 24, 21, 0.12) 100%);
+}
+
+.app {
+  min-height: 100vh;
+  min-height: 100dvh;
+  position: relative;
+  z-index: 1;
+}
+
+/* screens layer on top of each other, only one visible */
+.screen {
+  display: none;
+  min-height: 100vh;
+  min-height: 100dvh;
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 28px 24px;
+  flex-direction: column;
+  position: relative;
+  animation: fadeIn 0.5s ease-out;
+}
+.screen.active {
+  display: flex;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* dark variant for cold open */
+.screen.dark {
+  background: #14110e;
+  color: var(--cream);
+}
+
+/* system header — small text top corners */
+.sys {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+  letter-spacing: 1px;
+  color: var(--ink-dim);
+  text-transform: uppercase;
+  display: flex;
+  justify-content: space-between;
+  line-height: 1.6;
+  margin-bottom: 24px;
+}
+.dark .sys {
+  color: rgba(235, 226, 210, 0.4);
+}
+
+/* mute toggle (bottom right, out of the way) */
+.mute {
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  z-index: 200;
+  background: var(--cream);
+  border: 1px solid var(--ink-dim);
+  color: var(--ink-dim);
+  font-family: 'Press Start 2P', monospace;
+  font-size: 7px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 8px 10px;
+  cursor: pointer;
+  transition: all 0.15s;
+  box-shadow: 2px 2px 0 var(--ink);
+}
+.mute:hover {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+.dark .mute {
+  border-color: rgba(235, 226, 210, 0.3);
+  color: rgba(235, 226, 210, 0.5);
+}
+
+/* shared button */
+.btn {
+  background: var(--ink);
+  color: var(--cream);
+  border: none;
+  padding: 14px 18px;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  cursor: pointer;
+  box-shadow: 4px 4px 0 var(--accent);
+  transition: all 0.15s;
+  width: 100%;
+  text-align: center;
+  display: inline-block;
+}
+.btn:hover, .btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0 var(--accent);
+}
+.btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.btn-ghost {
+  background: transparent;
+  color: var(--ink);
+  border: 1px solid var(--ink);
+  box-shadow: none;
+}
+.btn-ghost:hover {
+  background: var(--ink);
+  color: var(--cream);
+  transform: none;
+  box-shadow: none;
+}
+
+/* utility */
+.serif {
+  font-family: 'Instrument Serif', serif;
+  font-style: italic;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+}
+.pixel {
+  font-family: 'Press Start 2P', monospace;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.red { color: var(--accent); }
+.dim { color: var(--ink-dim); }
+
+.dotted-line {
+  border: none;
+  border-top: 1px dashed var(--ink-dim);
+  margin: 12px 0;
+}
+.solid-line {
+  border: none;
+  border-top: 1px solid var(--ink);
+}
+
+/* sprite display — sprites have black bg, we frame them as portrait cards */
+.sprite-frame {
+  background: #14110e;
+  border: 1px solid var(--ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+}
+.sprite-frame img {
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  max-width: 100%;
+  max-height: 100%;
+  display: block;
+}
+
+/* responsive */
+@media (max-width: 380px) {
+  .screen { padding: 20px 16px; }
+}

@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#ebe2d2">
+<title>BETTER LUCK NEXT TIME — aliworld</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Instrument+Serif:ital@0;1&family=Caveat:wght@400&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles/base.css">
+<link rel="stylesheet" href="styles/game.css">
+</head>
+<body>
+
+<button id="mute-btn" class="mute">[ sound off ]</button>
+
+<div class="app">
+
+<!-- ============= TITLE SCREEN ============= -->
+<div id="screen-title" class="screen active">
+  <div class="sys">
+    <span>six5ive</span>
+    <span>aliworld</span>
+  </div>
+
+  <div class="core">
+    <img src="assets/butterfly.png" class="butterfly" alt="">
+    <div class="album-mark">▸ a danny ali album</div>
+    <div>
+      <h1 class="title">better luck<br>next time</h1>
+      <div class="by">a gym challenge</div>
+    </div>
+    <button id="title-start" class="start-btn">
+      <span class="blink"></span>press start
+    </button>
+  </div>
+
+  <div id="title-foot" class="foot">5 prizes · 6 gyms · one chance per trainer</div>
+</div>
+
+<!-- ============= COLD OPEN ============= -->
+<div id="screen-coldopen" class="screen dark">
+  <div class="sys">
+    <span>aliworld / unknown</span>
+    <span>?:??</span>
+  </div>
+
+  <div class="room">
+    <div class="walls"></div>
+    <div id="coldopen-narration" class="narration"></div>
+    <div id="coldopen-wild" class="wild" style="display:none">
+      <div class="wild-sprite"><img src="assets/sprites/creature-omen.png" alt=""></div>
+      <div class="wild-text">a wild thing<br><span class="red">appeared.</span></div>
+    </div>
+  </div>
+
+  <div id="coldopen-battle" class="battle-ui" style="display:none">
+    <div>
+      <div class="hp-row">
+        <span>you</span>
+        <span class="red">hp critical</span>
+      </div>
+      <div class="hp-bar"></div>
+    </div>
+
+    <div class="moves-cold">
+      <button id="coldopen-strike" class="move-cold">
+        <span>strike</span>
+        <span class="arrow">▸</span>
+      </button>
+      <button class="move-cold disabled">slip · locked</button>
+      <button class="move-cold disabled">lock in · locked</button>
+      <button class="move-cold disabled">fold · locked</button>
+    </div>
+
+    <div class="footer-line">no way out but through.</div>
+  </div>
+</div>
+
+<!-- ============= TITLE CARD (transition after cold open) ============= -->
+<div id="screen-titlecard" class="screen">
+  <div class="title-big">better luck<br>next time</div>
+  <button id="title-card-continue" class="btn" style="opacity: 0; transition: opacity 1s; max-width: 280px;">▸ continue</button>
+</div>
+
+<!-- ============= TRAINER CARD ============= -->
+<div id="screen-trainer" class="screen">
+  <div class="sys">
+    <span>aliworld / arrival</span>
+    <span>trainer registration</span>
+  </div>
+
+  <div class="head">
+    <div class="pre">▸ track 03 plays</div>
+    <h1>what's yo name?</h1>
+    <div class="sub">tell aliworld who you are</div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">trainer card</div>
+      <div class="card-id">id no.<span class="num">#000247</span></div>
+    </div>
+
+    <div class="card-row">
+      <div class="portrait">
+        <img src="assets/sprites/player.png" alt="">
+      </div>
+      <div class="fields">
+        <div class="field">
+          <label>name</label>
+          <input id="trainer-name" type="text" placeholder="any name will do" maxlength="20">
+        </div>
+        <div class="field">
+          <label>where to find you</label>
+          <input id="trainer-email" type="email" placeholder="your email">
+        </div>
+      </div>
+    </div>
+
+    <div class="meta-grid">
+      <div class="meta-item">
+        <span class="meta-label">region</span>
+        <span class="meta-value">aliworld</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">status</span>
+        <span class="meta-value red">unproven</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">badges</span>
+        <span class="meta-value">0 / 6</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">prize</span>
+        <span class="meta-value red">unclaimed</span>
+      </div>
+    </div>
+
+    <div id="consent-toggle" class="consent">
+      <span class="check"></span>
+      <span>emails about prizes &amp; the album. one prize per trainer.</span>
+    </div>
+  </div>
+
+  <button id="trainer-submit" class="btn">▸ enter aliworld</button>
+  <div id="trainer-next" class="next">next prize · <span class="red">sticker pack</span></div>
+</div>
+
+<!-- ============= STARTER SELECT ============= -->
+<div id="screen-starter" class="screen">
+  <div class="sys">
+    <span>aliworld / step 1</span>
+    <span>trainer #247</span>
+  </div>
+
+  <div class="head">
+    <div class="pre">▸ choose your starter</div>
+    <h1>only one walks<br>with you</h1>
+    <div class="sub">no take backs</div>
+  </div>
+
+  <div class="creatures">
+    <div class="creature" data-starter="vesper">
+      <div class="sprite-mini"><img src="assets/sprites/creature-vesper.png" alt=""></div>
+      <div class="meta">
+        <div class="name">vesper</div>
+        <div class="type">memory / dusk</div>
+        <div class="lyric">— for those who survive</div>
+      </div>
+      <div class="arrow">▸</div>
+    </div>
+    <div class="creature" data-starter="omen">
+      <div class="sprite-mini"><img src="assets/sprites/creature-omen.png" alt=""></div>
+      <div class="meta">
+        <div class="name">omen</div>
+        <div class="type">sign / luck</div>
+        <div class="lyric">— for those who walk before the storm</div>
+      </div>
+      <div class="arrow">▸</div>
+    </div>
+    <div class="creature" data-starter="hunger">
+      <div class="sprite-mini"><img src="assets/sprites/creature-hunger.png" alt=""></div>
+      <div class="meta">
+        <div class="name">hunger</div>
+        <div class="type">heart / risk</div>
+        <div class="lyric">— for those who can't wait</div>
+      </div>
+      <div class="arrow">▸</div>
+    </div>
+  </div>
+
+  <div class="submit">
+    <div class="pick-line">picked · <span class="red" id="starter-pick">none</span></div>
+    <button id="starter-submit" class="btn">▸ choose your starter</button>
+  </div>
+</div>
+
+<!-- ============= WORLD MAP ============= -->
+<div id="screen-map" class="screen">
+  <div class="sys">
+    <span>aliworld / map</span>
+    <span>trainer</span>
+  </div>
+
+  <div class="head">
+    <div id="map-track" class="pre">▸ track 04 plays</div>
+    <h1 id="map-title">find my way</h1>
+    <div class="sub">six gyms stand between you and danny</div>
+  </div>
+
+  <div class="progress">
+    <span class="progress-label">badges</span>
+    <div id="map-badges" class="badges-row"></div>
+  </div>
+
+  <div id="map-gyms" class="gyms"></div>
+
+  <div id="map-message" class="next-msg"></div>
+  <button id="map-enter" class="btn">▸ enter gym 1</button>
+</div>
+
+<!-- ============= BATTLE ============= -->
+<div id="screen-battle" class="screen">
+  <div class="sys">
+    <span>aliworld / battle</span>
+    <span id="battle-run">run #01</span>
+  </div>
+
+  <div class="gym-head">
+    <div id="battle-gym-num" class="gym-meta">gym 1 / 6</div>
+    <div id="battle-gym-name" class="gym-name">hold me back</div>
+  </div>
+
+  <div class="arena">
+    <!-- opponent (top) -->
+    <div class="combatant opp">
+      <div class="sprite-box">
+        <img src="" alt="">
+      </div>
+      <div class="info">
+        <div class="info-row">
+          <div>
+            <div id="opp-role" class="role">the gatekeeper sends</div>
+            <div id="opp-name" class="creature-name">stonemaw</div>
+          </div>
+          <div id="opp-lvl" class="lvl">l10</div>
+        </div>
+        <div class="hp-row">
+          <span class="hp-label">hp</span>
+          <div class="hp-bar"><div id="opp-hp-fill" class="hp-fill" style="width: 100%"></div></div>
+        </div>
+        <div id="opp-hp-text" class="hp-text">100 / 100</div>
+      </div>
+    </div>
+
+    <!-- player (bottom) -->
+    <div class="combatant you">
+      <div class="sprite-box">
+        <img src="" alt="">
+      </div>
+      <div class="info">
+        <div class="info-row">
+          <div id="you-lvl" class="lvl">l8</div>
+          <div>
+            <div class="role">you sent</div>
+            <div id="you-name" class="creature-name">vesper</div>
+          </div>
+        </div>
+        <div class="hp-row">
+          <span class="hp-label">hp</span>
+          <div class="hp-bar"><div id="you-hp-fill" class="hp-fill" style="width: 100%"></div></div>
+        </div>
+        <div id="you-hp-text" class="hp-text">100 / 100</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="battle-log" class="log"></div>
+
+  <div id="battle-moves" class="moves">
+    <button class="move" data-move="strike">strike<span class="pp">15-25 dmg</span></button>
+    <button class="move" data-move="slip">slip<span class="pp">halve next hit</span></button>
+    <button class="move" data-move="lockin">lock in<span class="pp">1.5x next strike</span></button>
+    <button class="move danger" data-move="fold">fold<span class="pp">forfeit run</span></button>
+  </div>
+</div>
+
+<!-- ============= LOSS ============= -->
+<div id="screen-loss" class="screen">
+  <div class="sys">
+    <span>aliworld / ended</span>
+    <span>run ended</span>
+  </div>
+
+  <div class="head">
+    <div class="pre">▸ <span id="loss-creature">your starter</span> fainted</div>
+    <h1>better luck<br>next time</h1>
+  </div>
+
+  <div class="card">
+    <div class="card-inner">
+      <div class="card-top">
+        <div>
+          fell at
+          <span class="red" id="loss-gym-num">gym 1</span>
+        </div>
+        <div>
+          card
+          <span class="red" id="loss-card-num">#000001</span>
+        </div>
+      </div>
+
+      <div class="card-center">
+        <img src="assets/butterfly.png" class="card-butterfly" alt="">
+        <div class="verdict-serif">almost.<br>not yet.</div>
+        <div id="loss-badges" class="badges-card-row"></div>
+        <div id="loss-cleared" class="stat-line">0 / 6 cleared</div>
+        <div id="loss-lore" class="lore">better luck doesn't come twice.</div>
+      </div>
+
+      <div class="card-bottom">
+        <div class="tags">
+          <span class="red">@officialdannyali</span><br>
+          <span class="red">@ssix5ive</span>
+        </div>
+        <div class="signature">— d.a.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button id="loss-share" class="btn">▸ share to ig story</button>
+    <div class="action-row">
+      <button id="loss-again" class="btn btn-ghost">play again</button>
+      <button id="loss-exit" class="btn btn-ghost">exit</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============= CHAMPION ============= -->
+<div id="screen-champion" class="screen">
+  <div class="sys">
+    <span>aliworld / champion</span>
+    <span>run cleared</span>
+  </div>
+
+  <div class="butterfly-wrap">
+    <div class="butterfly-rings">
+      <div class="ring"></div>
+      <div class="ring"></div>
+      <div class="ring"></div>
+    </div>
+    <img src="assets/butterfly.png" class="butterfly" alt="">
+  </div>
+
+  <div class="head">
+    <div class="pre">▸ danny ali defeated</div>
+    <h1>you cleared<br>aliworld</h1>
+    <div class="pixel-stamp">▸ champion</div>
+  </div>
+
+  <div class="summary">
+    <div class="stat">
+      <div class="stat-label">runs</div>
+      <div id="champ-runs" class="stat-value">01</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">badges</div>
+      <div class="stat-value red">6 / 6</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">starter</div>
+      <div id="champ-starter" class="stat-value">omen</div>
+    </div>
+  </div>
+
+  <div class="prize-block">
+    <div class="prize-label">▸ you have earned</div>
+    <div id="champ-prize-name" class="prize-name">free merch pack</div>
+    <div id="champ-prize-meta" class="prize-meta">one of five prizes<span class="red">three left</span></div>
+  </div>
+
+  <div id="champ-email-conf" class="email-conf">we'll reach <strong>your@email.com</strong> within 24 hours.</div>
+
+  <div class="actions">
+    <button id="champ-share" class="btn">▸ share to ig story</button>
+    <button id="champ-exit" class="btn btn-ghost">exit</button>
+  </div>
+
+  <div class="signature-bot">— d.a.</div>
+</div>
+
+</div>
+
+<script src="scripts/data.js"></script>
+<script src="scripts/support.js"></script>
+<script src="scripts/battle.js"></script>
+<script src="scripts/game.js"></script>
+</body>
+</html>
