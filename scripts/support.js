@@ -1,7 +1,6 @@
 // support.js — state management, audio, sharing utilities
 
 // ============= STATE =============
-// in v1 this lives in localStorage. phase 3 swaps to supabase.
 const State = {
   KEY: 'blnt_state',
 
@@ -10,10 +9,15 @@ const State = {
     email: '',
     starter: null,
     runs: 0,
-    currentRun: null,
     badges: 0,
-    prizesClaimed: [],
-    winners: [], // [{ name, email, prize, time }]
+    // resume mechanic: if we fell at gym 4+, this holds our checkpoint info
+    // null = no checkpoint, fresh run on next play
+    checkpoint: null, // { badges: 3, starter: 'omen' }
+    // prize tracking — globally limited prizes that have been claimed
+    // limited prizes: only one winner each (first to clear that gym)
+    // unlimited prizes (gym 1): tracked per-email so we know who got the link
+    prizesClaimed: [], // limited prizes only [{ id, gym, email, name, time }]
+    prizesAwarded: [], // ALL prizes ever awarded (limited + unlimited) [{ id, gym, email, name, time, sent }]
     fallenLog: [], // [{ name, gym, time }]
     audioMuted: true,
     runId: 1
@@ -24,7 +28,6 @@ const State = {
       const raw = localStorage.getItem(this.KEY);
       if (!raw) return this.default();
       const data = JSON.parse(raw);
-      // merge with default so new fields exist
       return { ...this.default(), ...data };
     } catch (e) {
       return this.default();
@@ -39,19 +42,71 @@ const State = {
     }
   },
 
-  // who has won which prize? returns next available prize
-  nextPrize(state) {
-    const claimed = state.prizesClaimed.map(p => p.id);
-    return window.GAME_DATA.PRIZES.find(p => !claimed.includes(p.id));
+  // get the prize unlocked by clearing a specific gym
+  prizeForGym(gymNum) {
+    return window.GAME_DATA.PRIZES.find(p => p.gym === gymNum);
   },
 
+  // is a limited prize still available?
+  isPrizeAvailable(state, prize) {
+    if (!prize.limited) return true;
+    return !state.prizesClaimed.some(p => p.id === prize.id);
+  },
+
+  // has this specific email already won this specific prize? (prevents double-claim of unlimited prizes)
+  emailHasWonPrize(state, email, prizeId) {
+    return state.prizesAwarded.some(
+      p => p.id === prizeId && p.email.toLowerCase() === email.toLowerCase()
+    );
+  },
+
+  // award a prize for clearing a gym. returns the prize awarded, or null if none.
+  awardPrizeForGym(state, gymNum, email, name) {
+    const prize = this.prizeForGym(gymNum);
+    if (!prize) return null;
+
+    // already won this exact prize? skip
+    if (this.emailHasWonPrize(state, email, prize.id)) return null;
+
+    // limited prize already claimed? skip
+    if (prize.limited && !this.isPrizeAvailable(state, prize)) return null;
+
+    const award = {
+      id: prize.id,
+      gym: prize.gym,
+      name: prize.name,
+      email: email,
+      winnerName: name,
+      time: Date.now(),
+      sent: false
+    };
+
+    state.prizesAwarded.push(award);
+
+    // for limited prizes, also record in claimed (locks it forever)
+    if (prize.limited) {
+      state.prizesClaimed.push(award);
+    }
+
+    return prize;
+  },
+
+  // count of limited prizes remaining
   prizesRemaining(state) {
-    return window.GAME_DATA.PRIZES.length - state.prizesClaimed.length;
+    const limited = window.GAME_DATA.PRIZES.filter(p => p.limited);
+    return limited.length - state.prizesClaimed.length;
   },
 
-  // has this email already won a prize?
-  emailHasWon(state, email) {
-    return state.winners.some(w => w.email.toLowerCase() === email.toLowerCase());
+  // does this gym have its prize still available?
+  gymHasAvailablePrize(state, gymNum) {
+    const prize = this.prizeForGym(gymNum);
+    if (!prize) return false;
+    return this.isPrizeAvailable(state, prize);
+  },
+
+  // resume mechanic: did we fall past the checkpoint?
+  hasCheckpoint(state) {
+    return state.checkpoint && state.checkpoint.badges >= window.GAME_DATA.CHECKPOINT_GYM - 1;
   },
 
   reset() {
@@ -152,8 +207,13 @@ const Share = {
     ctx.font = 'italic 130px serif';
     ctx.textAlign = 'center';
     if (type === 'loss') {
-      ctx.fillText('almost.', 540, 700);
-      ctx.fillText('not yet.', 540, 850);
+      ctx.fillStyle = '#b32a1f';
+      ctx.font = 'bold 96px monospace';
+      ctx.fillText('BETTER LUCK', 540, 660);
+      ctx.fillText('NEXT TIME!', 540, 770);
+      ctx.fillStyle = '#6b6258';
+      ctx.font = 'italic 36px serif';
+      ctx.fillText('an album by danny ali', 540, 830);
     } else {
       ctx.fillText('cleared', 540, 700);
       ctx.fillText('aliworld.', 540, 850);
@@ -163,7 +223,7 @@ const Share = {
     ctx.fillStyle = '#b32a1f';
     ctx.font = 'bold 32px monospace';
     if (type === 'loss') {
-      ctx.fillText(`FELL AT GYM ${data.gym} / 6`, 540, 950);
+      ctx.fillText(`FELL AT GYM ${data.gym} / 6`, 540, 920);
     } else {
       ctx.fillText('CHAMPION', 540, 950);
     }

@@ -1,9 +1,11 @@
-// game.js — main game controller, screen routing, state machine
+// game.js — main controller, screen routing, state machine
 
 const Game = {
   state: null,
   currentBattle: null,
   currentScreen: 'title',
+  tempStarter: null,
+  pendingGym: null,
 
   init() {
     this.state = State.load();
@@ -20,7 +22,6 @@ const Game = {
       screen.classList.add('active');
       this.currentScreen = name;
       window.scrollTo(0, 0);
-      // play music for screen
       const audioMap = {
         coldopen: 'coldopen',
         title: 'ambient',
@@ -35,52 +36,34 @@ const Game = {
   },
 
   bindEvents() {
-    // mute button
     const mute = document.getElementById('mute-btn');
     if (mute) mute.addEventListener('click', () => Audio.toggleMute());
 
-    // title screen → cold open (the "press start" experience)
-    document.getElementById('title-start').addEventListener('click', () => {
-      this.startColdOpen();
-    });
+    document.getElementById('title-start').addEventListener('click', () => this.startColdOpen());
+    document.getElementById('coldopen-strike').addEventListener('click', () => this.runColdOpenLoss());
+    document.getElementById('title-card-continue').addEventListener('click', () => this.showScreen('trainer'));
 
-    // cold open: only strike is enabled, the player loses on purpose
-    document.getElementById('coldopen-strike').addEventListener('click', () => {
-      this.runColdOpenLoss();
-    });
-
-    // after cold open title card, fade to trainer
-    document.getElementById('title-card-continue').addEventListener('click', () => {
-      this.showScreen('trainer');
-    });
-
-    // trainer card submission
-    document.getElementById('trainer-submit').addEventListener('click', () => {
-      this.submitTrainer();
-    });
+    document.getElementById('trainer-submit').addEventListener('click', () => this.submitTrainer());
     document.getElementById('consent-toggle').addEventListener('click', (e) => {
       e.currentTarget.classList.toggle('unchecked');
     });
 
-    // starter selection
     document.querySelectorAll('#screen-starter .creature').forEach(el => {
       el.addEventListener('click', () => this.selectStarter(el.dataset.starter));
     });
-    document.getElementById('starter-submit').addEventListener('click', () => {
-      this.confirmStarter();
-    });
+    document.getElementById('starter-submit').addEventListener('click', () => this.confirmStarter());
 
-    // world map → enter current gym
-    document.getElementById('map-enter').addEventListener('click', () => {
-      this.enterCurrentGym();
-    });
+    document.getElementById('map-enter').addEventListener('click', () => this.showLeaderReveal());
+    document.getElementById('reveal-continue').addEventListener('click', () => this.startBattleNow());
 
-    // loss screen
     document.getElementById('loss-share').addEventListener('click', () => this.shareLoss());
     document.getElementById('loss-again').addEventListener('click', () => this.playAgain());
+    document.getElementById('loss-resume').addEventListener('click', () => this.resumeRun());
     document.getElementById('loss-exit').addEventListener('click', () => this.exitToTitle());
+    document.getElementById('loss-album').addEventListener('click', () => {
+      window.open(window.GAME_DATA.ALBUM.link, '_blank');
+    });
 
-    // champion screen
     document.getElementById('champ-share').addEventListener('click', () => this.shareWin());
     document.getElementById('champ-exit').addEventListener('click', () => this.exitToTitle());
   },
@@ -88,7 +71,6 @@ const Game = {
   // ============= COLD OPEN =============
   startColdOpen() {
     this.showScreen('coldopen');
-    // narration sequence
     const lines = [
       'you don\'t remember how you got here.',
       'the walls are closer than they were a minute ago.',
@@ -98,6 +80,7 @@ const Game = {
     const wildEl = document.getElementById('coldopen-wild');
     const battleEl = document.getElementById('coldopen-battle');
     narrationEl.style.display = 'block';
+    narrationEl.innerHTML = '';
     wildEl.style.display = 'none';
     battleEl.style.display = 'none';
 
@@ -112,9 +95,7 @@ const Game = {
         setTimeout(() => {
           narrationEl.style.display = 'none';
           wildEl.style.display = 'flex';
-          setTimeout(() => {
-            battleEl.style.display = 'flex';
-          }, 1200);
+          setTimeout(() => { battleEl.style.display = 'flex'; }, 1200);
         }, 1500);
       }
     };
@@ -122,7 +103,6 @@ const Game = {
   },
 
   runColdOpenLoss() {
-    // player is going to lose. animate hp draining.
     const battleEl = document.getElementById('coldopen-battle');
     battleEl.innerHTML = `
       <div class="hp-row">
@@ -150,12 +130,15 @@ const Game = {
     const email = document.getElementById('trainer-email').value.trim();
     const consent = !document.getElementById('consent-toggle').classList.contains('unchecked');
 
+    document.getElementById('trainer-name').classList.remove('error');
+    document.getElementById('trainer-email').classList.remove('error');
+
     if (!name) {
       document.getElementById('trainer-name').classList.add('error');
       Toast.show('we need to know what to call you');
       return;
     }
-    if (!email || !email.includes('@')) {
+    if (!email || !email.includes('@') || !email.includes('.')) {
       document.getElementById('trainer-email').classList.add('error');
       Toast.show('we need a real email');
       return;
@@ -163,17 +146,6 @@ const Game = {
     if (!consent) {
       Toast.show('check the box first');
       return;
-    }
-
-    // check if email already won
-    if (State.emailHasWon(this.state, email)) {
-      Toast.show(`your luck has already turned, ${name.toLowerCase()}.`);
-      return;
-    }
-
-    // check if all prizes claimed
-    if (State.prizesRemaining(this.state) === 0) {
-      Toast.show('all prizes claimed. play for the experience.');
     }
 
     this.state.name = name;
@@ -200,8 +172,11 @@ const Game = {
     this.state.starter = this.tempStarter;
     this.state.runs += 1;
     this.state.badges = 0;
-    this.state.runId = (this.state.runId || 1);
     State.save(this.state);
+
+    // write to supabase — this is the email capture moment
+    DB.recordPlay(this.state.name, this.state.email, this.tempStarter).catch(() => {});
+
     this.showScreen('map');
     this.updateMap();
   },
@@ -231,7 +206,6 @@ const Game = {
       gymList.appendChild(div);
     });
 
-    // badges progress strip
     const badgesEl = document.getElementById('map-badges');
     badgesEl.innerHTML = '';
     for (let i = 0; i < 6; i++) {
@@ -242,7 +216,6 @@ const Game = {
       badgesEl.appendChild(b);
     }
 
-    // headline = current gym's name + track
     const cur = window.GAME_DATA.GYMS[this.state.badges];
     if (cur) {
       document.getElementById('map-title').textContent = cur.name;
@@ -256,21 +229,44 @@ const Game = {
     }
   },
 
-  enterCurrentGym() {
+  // ============= LEADER REVEAL =============
+  showLeaderReveal() {
     const gym = window.GAME_DATA.GYMS[this.state.badges];
     if (!gym) return;
-    this.startBattle(gym);
+    this.pendingGym = gym;
+
+    document.getElementById('reveal-gym-num').textContent = `gym ${gym.num} / 6`;
+    document.getElementById('reveal-track').textContent = `track ${String(gym.trackNum).padStart(2, '0')}`;
+    document.getElementById('reveal-leader-img').src = gym.leaderSprite;
+    document.getElementById('reveal-leader-name').textContent = gym.leader.toLowerCase();
+    document.getElementById('reveal-quote').innerHTML = gym.intro
+      ? `<em>${gym.intro.replace(/\n/g, '<br>')}</em>`
+      : '';
+    document.getElementById('reveal-quote-line').textContent = gym.quote || '';
+
+    this.showScreen('reveal');
+
+    // auto-continue after 5s if user doesn't tap
+    if (this.revealTimer) clearTimeout(this.revealTimer);
+    this.revealTimer = setTimeout(() => {
+      if (this.currentScreen === 'reveal') this.startBattleNow();
+    }, 6000);
+  },
+
+  startBattleNow() {
+    if (this.revealTimer) clearTimeout(this.revealTimer);
+    if (!this.pendingGym) return;
+    this.startBattle(this.pendingGym);
+    this.pendingGym = null;
   },
 
   // ============= BATTLE =============
   startBattle(gym) {
     const starter = window.GAME_DATA.STARTERS.find(s => s.id === this.state.starter);
-    // restore some HP between gyms (60% restore)
     const playerCreature = {
       ...starter,
       stats: { ...starter.stats }
     };
-    // if not first gym, scale player level up and apply partial heal
     if (this.state.badges > 0) {
       const lvlBonus = this.state.badges * 4;
       playerCreature.stats.hp += lvlBonus;
@@ -282,16 +278,6 @@ const Game = {
     document.getElementById('battle-gym-name').textContent = gym.name;
     document.getElementById('battle-log').innerHTML = '';
 
-    // log the intro
-    if (gym.intro) {
-      const lines = gym.intro.split('\n');
-      lines.forEach((line, i) => {
-        setTimeout(() => {
-          this.appendLog(`<span class="dim">${line}</span>`);
-        }, i * 600);
-      });
-    }
-
     this.currentBattle = new window.Battle(
       playerCreature,
       gym,
@@ -300,16 +286,16 @@ const Game = {
       ({ won, fled }) => this.endBattle(won, fled)
     );
 
+    this.renderBattle(); // initial render
+
     setTimeout(() => {
       this.currentBattle.start();
-      this.renderBattle();
-    }, gym.intro ? gym.intro.split('\n').length * 600 + 200 : 200);
+    }, 400);
 
-    // bind move buttons
     document.querySelectorAll('#battle-moves .move').forEach(b => {
       b.onclick = () => {
         const move = b.dataset.move;
-        this.currentBattle.playerMove(move);
+        if (this.currentBattle) this.currentBattle.playerMove(move);
       };
     });
   },
@@ -320,7 +306,6 @@ const Game = {
     p.innerHTML = msg;
     log.appendChild(p);
     log.scrollTop = log.scrollHeight;
-    // keep last 5 lines
     while (log.children.length > 5) log.removeChild(log.firstChild);
   },
 
@@ -328,7 +313,6 @@ const Game = {
     const b = this.currentBattle;
     if (!b) return;
 
-    // opponent
     document.getElementById('opp-name').textContent = b.opponent.name.toLowerCase();
     document.getElementById('opp-lvl').textContent = `l${10 + this.state.badges * 2}`;
     document.getElementById('opp-role').textContent = `${b.gym.leader} sends`;
@@ -336,14 +320,24 @@ const Game = {
     if (oppSprite) oppSprite.src = b.opponent.sprite || 'assets/butterfly.png';
     this.updateHp('opp', b.opponent);
 
-    // player
+    const oppBox = document.querySelector('.combatant.opp .sprite-box');
+    if (oppBox) {
+      if (b.opponent.currentHp <= 0) oppBox.classList.add('faint');
+      else oppBox.classList.remove('faint');
+    }
+
     document.getElementById('you-name').textContent = b.player.name.toLowerCase();
     document.getElementById('you-lvl').textContent = `l${8 + this.state.badges * 2}`;
     const youSprite = document.querySelector('.combatant.you .sprite-box img');
     if (youSprite) youSprite.src = b.player.sprite || 'assets/butterfly.png';
     this.updateHp('you', b.player);
 
-    // disable moves while busy
+    const youBox = document.querySelector('.combatant.you .sprite-box');
+    if (youBox) {
+      if (b.player.currentHp <= 0) youBox.classList.add('faint');
+      else youBox.classList.remove('faint');
+    }
+
     document.querySelectorAll('#battle-moves .move').forEach(b2 => {
       b2.disabled = b.busy;
     });
@@ -365,53 +359,109 @@ const Game = {
   },
 
   endBattle(won, fled) {
+    this.currentBattle = null;
+
     if (won) {
       this.state.badges += 1;
+      const gymJustCleared = this.state.badges;
       State.save(this.state);
 
-      if (this.state.badges >= 6) {
-        // CHAMPION
-        this.handleChampion();
+      // award prize via supabase, then continue
+      const prize = window.GAME_DATA.PRIZES.find(p => p.gym === gymJustCleared);
+      if (prize) {
+        DB.awardPrize(prize, this.state.name, this.state.email)
+          .then(awarded => {
+            // also record locally for instant UI
+            if (awarded) {
+              this.state.prizesAwarded = this.state.prizesAwarded || [];
+              this.state.prizesAwarded.push({
+                id: prize.id, gym: prize.gym, name: prize.name,
+                email: this.state.email, winnerName: this.state.name,
+                time: Date.now(), sent: false
+              });
+              if (prize.limited) {
+                this.state.prizesClaimed = this.state.prizesClaimed || [];
+                this.state.prizesClaimed.push({ id: prize.id });
+              }
+              State.save(this.state);
+            }
+            this.lastPrizeWon = awarded ? prize : null;
+            this.continueAfterWin(gymJustCleared);
+          })
+          .catch(() => {
+            // supabase failed — still let game continue
+            this.lastPrizeWon = null;
+            this.continueAfterWin(gymJustCleared);
+          });
       } else {
-        // gym cleared, return to map
-        Toast.show(`gym cleared. badge earned.`);
-        setTimeout(() => {
-          this.showScreen('map');
-          this.updateMap();
-        }, 1600);
+        this.lastPrizeWon = null;
+        this.continueAfterWin(gymJustCleared);
       }
     } else {
-      // lost or fled
       this.handleLoss();
+    }
+  },
+
+  continueAfterWin(gymCleared) {
+    const prize = this.lastPrizeWon;
+    if (gymCleared >= 6) {
+      this.handleChampion(prize);
+    } else {
+      if (prize) {
+        Toast.show(`▸ won ${prize.name}!`, 3500);
+      } else {
+        Toast.show(`gym cleared. badge earned.`);
+      }
+      setTimeout(() => {
+        this.showScreen('map');
+        this.updateMap();
+      }, 2000);
     }
   },
 
   // ============= LOSS =============
   handleLoss() {
     const fellAtGym = this.state.badges + 1;
-    // log the fallen for the dashboard
+    const badgesAchieved = this.state.badges;
+    const checkpointGym = window.GAME_DATA.CHECKPOINT_GYM;
+
     this.state.fallenLog.push({
       name: this.state.name,
       gym: fellAtGym,
       time: Date.now()
     });
-    // reset badges (run is over)
-    const badgesAchieved = this.state.badges;
+
+    // write fall to supabase for funnel tracking
+    DB.recordFall(this.state.name, this.state.email, fellAtGym).catch(() => {});
+
+    // resume mechanic: if fell at gym 4+, save checkpoint
+    // checkpoint preserves: badges (gym 3 cleared = badges 3), starter
+    const canResume = fellAtGym >= checkpointGym;
+    if (canResume) {
+      this.state.checkpoint = {
+        badges: badgesAchieved,
+        starter: this.state.starter,
+        savedAt: Date.now()
+      };
+    } else {
+      // gyms 1-3 — full reset
+      this.state.checkpoint = null;
+    }
+
+    // reset badges in main state (they live in checkpoint if resumable)
     this.state.badges = 0;
     State.save(this.state);
 
-    // show loss
+    // populate loss screen
     document.getElementById('loss-creature').textContent = (this.state.starter || '').toLowerCase();
     document.getElementById('loss-gym-num').textContent = `gym ${fellAtGym}`;
     document.getElementById('loss-card-num').textContent = `#${String(this.state.runs).padStart(6, '0')}`;
     document.getElementById('loss-cleared').textContent = `${badgesAchieved} / 6 cleared`;
 
-    // rotate lore line
     const lore = window.GAME_DATA.LOSS_LORE[Math.floor(Math.random() * window.GAME_DATA.LOSS_LORE.length)];
     document.getElementById('loss-lore').textContent = lore;
     this.lastLore = lore;
 
-    // render badges row
     const row = document.getElementById('loss-badges');
     row.innerHTML = '';
     for (let i = 0; i < 6; i++) {
@@ -425,6 +475,17 @@ const Game = {
 
     this.lastFellAt = fellAtGym;
     this.lastBadges = badgesAchieved;
+
+    // toggle button visibility based on resume eligibility
+    const resumeBtn = document.getElementById('loss-resume');
+    const againBtn = document.getElementById('loss-again');
+    if (canResume) {
+      resumeBtn.style.display = '';
+      againBtn.style.display = 'none';
+    } else {
+      resumeBtn.style.display = 'none';
+      againBtn.style.display = '';
+    }
 
     this.showScreen('loss');
   },
@@ -440,10 +501,25 @@ const Game = {
   },
 
   playAgain() {
-    if (State.prizesRemaining(this.state) === 0) {
-      Toast.show('all prizes claimed. you can still play.');
-    }
+    // full restart from starter selection (gyms 1-3 fall, or "play again" choice)
+    this.state.checkpoint = null;
+    State.save(this.state);
     this.showScreen('starter');
+  },
+
+  resumeRun() {
+    // restore badges from checkpoint, jump back to map
+    if (!State.hasCheckpoint(this.state)) {
+      Toast.show('no checkpoint to resume');
+      this.showScreen('starter');
+      return;
+    }
+    this.state.badges = this.state.checkpoint.badges;
+    this.state.starter = this.state.checkpoint.starter;
+    State.save(this.state);
+    this.showScreen('map');
+    this.updateMap();
+    Toast.show(`▸ run resumed at gym ${this.state.badges + 1}`);
   },
 
   exitToTitle() {
@@ -452,27 +528,12 @@ const Game = {
   },
 
   // ============= CHAMPION =============
-  handleChampion() {
-    const nextPrize = State.nextPrize(this.state);
-    if (!nextPrize) {
-      // no prize left, but they still cleared aliworld
-      this.showChampion(null);
-      return;
-    }
-
-    // claim the prize
-    const prizeWon = { ...nextPrize, claimedBy: this.state.email, claimedAt: Date.now() };
-    this.state.prizesClaimed.push(prizeWon);
-    this.state.winners.push({
-      name: this.state.name,
-      email: this.state.email,
-      prize: nextPrize.name,
-      prizeId: nextPrize.id,
-      time: Date.now()
-    });
+  handleChampion(prizeWon) {
+    // prizeWon is the gym 6 prize (lifetime show entry), already awarded by endBattle
+    // clear checkpoint since we cleared the run
+    this.state.checkpoint = null;
     State.save(this.state);
-
-    this.showChampion(nextPrize);
+    this.showChampion(prizeWon);
   },
 
   showChampion(prize) {
@@ -482,11 +543,11 @@ const Game = {
     if (prize) {
       document.getElementById('champ-prize-name').textContent = prize.name;
       const remaining = State.prizesRemaining(this.state);
-      document.getElementById('champ-prize-meta').innerHTML = `one of five prizes<span class="red">${remaining === 0 ? 'last one claimed' : `${remaining} left`}</span>`;
+      document.getElementById('champ-prize-meta').innerHTML = `champion of aliworld<span class="red">${remaining === 0 ? 'last prize claimed' : `${remaining} prizes left in pool`}</span>`;
       document.getElementById('champ-email-conf').innerHTML = `we'll reach <strong>${this.state.email}</strong> within 24 hours.`;
     } else {
       document.getElementById('champ-prize-name').textContent = 'aliworld respect';
-      document.getElementById('champ-prize-meta').innerHTML = `all prizes claimed<span class="red">but you cleared it anyway</span>`;
+      document.getElementById('champ-prize-meta').innerHTML = `the show entry was already claimed<span class="red">but you cleared it anyway</span>`;
       document.getElementById('champ-email-conf').innerHTML = `<em>thank you for playing.</em>`;
     }
 
@@ -494,7 +555,7 @@ const Game = {
   },
 
   shareWin() {
-    const lastPrize = this.state.prizesClaimed[this.state.prizesClaimed.length - 1];
+    const lastPrize = this.lastPrizeWon || (this.state.prizesAwarded[this.state.prizesAwarded.length - 1]);
     Share.share('champion', {
       name: this.state.name,
       prize: lastPrize ? lastPrize.name : 'champion',
@@ -502,24 +563,23 @@ const Game = {
     });
   },
 
-  // ============= META UPDATES (title screen, etc) =============
   updateMetaScreens() {
     const remaining = State.prizesRemaining(this.state);
-    const nextPrize = State.nextPrize(this.state);
     const prizeText = remaining === 0
-      ? 'all prizes claimed'
-      : `${remaining} prizes · 6 gyms · one chance per trainer`;
+      ? 'all limited prizes claimed · play for fun'
+      : `6 gyms · 6 prizes · ${remaining} limited remaining`;
     const titleFoot = document.getElementById('title-foot');
     if (titleFoot) titleFoot.textContent = prizeText;
 
+    // next prize on trainer card = the prize for gym 1 (always available — unlimited)
     const trainerNext = document.getElementById('trainer-next');
-    if (trainerNext && nextPrize) {
-      trainerNext.innerHTML = `next prize · <span class="red">${nextPrize.name}</span>`;
+    if (trainerNext) {
+      const gym1Prize = State.prizeForGym(1);
+      trainerNext.innerHTML = `gym 1 reward · <span class="red">${gym1Prize.name}</span>`;
     }
   }
 };
 
-// boot
 document.addEventListener('DOMContentLoaded', () => {
   Game.init();
 });

@@ -744,6 +744,85 @@
   margin-top: 8px;
 }
 
+/* ==================== LEADER REVEAL ==================== */
+#screen-reveal {
+  gap: 24px;
+  text-align: center;
+}
+#screen-reveal > *:not(.sys) {
+  align-self: center;
+}
+
+#screen-reveal .reveal-stack {
+  text-align: center;
+  margin-top: 16px;
+}
+#screen-reveal .reveal-pre {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+  letter-spacing: 2px;
+  color: var(--ink-dim);
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+#screen-reveal .reveal-gym {
+  font-family: 'Instrument Serif', serif;
+  font-style: italic;
+  font-size: 36px;
+  line-height: 0.95;
+  color: var(--ink);
+}
+
+#screen-reveal .reveal-portrait {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin: 8px 0;
+}
+#screen-reveal .reveal-frame {
+  width: 200px;
+  height: 240px;
+  background: #14110e;
+  border: 1px solid var(--ink);
+  box-shadow: 6px 6px 0 var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: revealIn 0.6s ease-out;
+}
+@keyframes revealIn {
+  from { opacity: 0; transform: scale(0.92); }
+  to { opacity: 1; transform: scale(1); }
+}
+#screen-reveal .reveal-frame img {
+  width: 80%;
+  height: 80%;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+#screen-reveal .reveal-leader-name {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 13px;
+  letter-spacing: 2px;
+  color: var(--accent);
+  text-transform: uppercase;
+}
+#screen-reveal .reveal-quote {
+  font-family: 'Instrument Serif', serif;
+  font-style: italic;
+  font-size: 22px;
+  line-height: 1.4;
+  color: var(--ink);
+  max-width: 320px;
+  margin: 0 auto;
+}
+#screen-reveal #reveal-begin {
+  margin-top: auto;
+  width: 100%;
+  align-self: stretch !important;
+}
+
 /* ==================== BATTLE ==================== */
 #screen-battle { gap: 14px; padding: 20px 16px; }
 
@@ -926,8 +1005,99 @@
 #screen-battle .move.danger { color: var(--accent); }
 #screen-battle .move.danger .pp { color: var(--accent); }
 
-/* ==================== LOSS / CHAMPION ==================== */
-#screen-loss, #screen-champion { gap: 20px; }
+/* ==================== LEADER REVEAL ==================== */
+#screen-reveal {
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 24px;
+}
+#screen-reveal .reveal-core {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  width: 100%;
+  padding: 16px 0;
+}
+#screen-reveal .reveal-pre {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 9px;
+  letter-spacing: 3px;
+  color: var(--accent);
+  text-transform: uppercase;
+  animation: revealPulse 1.2s ease-in-out infinite;
+}
+@keyframes revealPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+#screen-reveal .reveal-portrait {
+  width: 200px;
+  height: 240px;
+  background: #14110e;
+  border: 1px solid var(--ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 6px 6px 0 var(--accent);
+  animation: revealEnter 0.6s ease-out;
+}
+@keyframes revealEnter {
+  0% { opacity: 0; transform: translateY(20px) scale(0.95); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+#screen-reveal .reveal-portrait img {
+  max-width: 85%;
+  max-height: 85%;
+  image-rendering: pixelated;
+}
+#screen-reveal .reveal-name {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 18px;
+  letter-spacing: 3px;
+  color: var(--ink);
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+#screen-reveal .reveal-quote {
+  font-family: 'Instrument Serif', serif;
+  font-style: italic;
+  font-size: 18px;
+  color: var(--ink-dim);
+  line-height: 1.4;
+  max-width: 320px;
+}
+#screen-reveal .reveal-quote-line {
+  font-family: 'Instrument Serif', serif;
+  font-style: italic;
+  font-size: 22px;
+  color: var(--accent);
+  line-height: 1.3;
+  max-width: 320px;
+  margin-top: -8px;
+}
+
+/* ==================== LOSS — album cta ==================== */
+#screen-loss .album-cta-pre {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+  letter-spacing: 3px;
+  color: var(--ink-dim);
+  text-transform: uppercase;
+  margin-top: 8px;
+}
+#screen-loss .album-btn {
+  background: var(--accent);
+  color: var(--cream);
+  box-shadow: 4px 4px 0 var(--ink);
+  margin-top: 4px;
+}
+#screen-loss .album-btn:hover {
+  box-shadow: 2px 2px 0 var(--ink);
+}
 
 #screen-loss .head, #screen-champion .head {
   text-align: center;
@@ -943,11 +1113,29 @@
   text-transform: uppercase;
 }
 #screen-loss .head h1 {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 26px;
+  line-height: 1.2;
+  color: var(--accent);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+#screen-loss .loss-album-credit {
   font-family: 'Instrument Serif', serif;
   font-style: italic;
-  font-size: 36px;
-  line-height: 0.95;
+  font-size: 16px;
+  color: var(--ink-dim);
+  margin-top: 4px;
+}
+#screen-loss .album-out {
+  display: block;
+  font-family: 'Instrument Serif', serif;
+  font-style: italic;
+  text-transform: none;
+  font-size: 11px;
+  letter-spacing: 0;
   color: var(--ink);
+  margin: 4px 0;
 }
 #screen-champion .head h1 {
   font-family: 'Instrument Serif', serif;

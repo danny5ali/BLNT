@@ -1,4 +1,4 @@
-// battle.js — the battle system
+// battle.js — battle system, rewritten for clarity and to fix hang bugs
 
 class Battle {
   constructor(playerCreature, gym, log, onUpdate, onEnd) {
@@ -7,29 +7,29 @@ class Battle {
     this.onUpdate = onUpdate;
     this.onEnd = onEnd;
 
-    // clone stats so the originals aren't mutated across battles
-    this.player = {
-      ...playerCreature,
-      stats: { ...playerCreature.stats },
-      currentHp: playerCreature.stats.hp,
-      maxHp: playerCreature.stats.hp,
-      slipping: false,
-      charged: false
-    };
-
-    // build opponent(s) — gyms 3 and 6 have two creatures
+    this.player = this.makeCombatant(playerCreature);
     this.opponents = [this.makeOpponent(gym.creature)];
     if (gym.creature2) {
       this.opponents.push(this.makeOpponent(gym.creature2));
     }
     this.currentOpp = 0;
-
-    this.busy = false;
+    this.busy = true; // start busy until intro finishes
     this.ended = false;
   }
 
+  makeCombatant(c) {
+    return {
+      name: c.name,
+      sprite: c.sprite,
+      stats: { ...c.stats },
+      currentHp: c.stats.hp,
+      maxHp: c.stats.hp,
+      slipping: false,
+      charged: false
+    };
+  }
+
   makeOpponent(creatureData) {
-    // mirror match copies player's starter
     if (creatureData.mirror) {
       return {
         name: this.player.name,
@@ -41,14 +41,7 @@ class Battle {
         charged: false
       };
     }
-    return {
-      ...creatureData,
-      stats: { ...creatureData.stats },
-      currentHp: creatureData.stats.hp,
-      maxHp: creatureData.stats.hp,
-      slipping: false,
-      charged: false
-    };
+    return this.makeCombatant(creatureData);
   }
 
   get opponent() {
@@ -56,121 +49,123 @@ class Battle {
   }
 
   start() {
+    this.busy = true;
     this.log(`<span class="arrow">▸</span>${this.gym.leader} sent out ${this.opponent.name.toLowerCase()}.`);
     if (this.gym.quote) {
       setTimeout(() => this.log(`<span class="dim">${this.gym.quote.toLowerCase()}</span>`), 600);
+      setTimeout(() => {
+        this.log(`<span class="dim">what will you do?</span>`);
+        this.busy = false;
+        this.onUpdate();
+      }, 1300);
+    } else {
+      setTimeout(() => {
+        this.log(`<span class="dim">what will you do?</span>`);
+        this.busy = false;
+        this.onUpdate();
+      }, 900);
     }
-    setTimeout(() => {
-      this.log(`<span class="dim">what will you do?</span>`);
-      this.onUpdate();
-    }, 1200);
   }
 
-  // called when player picks a move
   playerMove(moveId) {
     if (this.busy || this.ended) return;
     this.busy = true;
+    this.onUpdate();
 
     const move = window.GAME_DATA.MOVES[moveId];
 
     if (move.isFlee) {
       this.log(`<span class="arrow">▸</span>you folded.`);
-      setTimeout(() => this.endBattle(false, true), 800);
+      this.scheduleEnd(false, true, 800);
       return;
     }
 
-    // determine turn order
     const playerFirst = this.player.stats.spd >= this.opponent.stats.spd;
+
     if (playerFirst) {
-      this.executePlayerMove(move, () => {
-        if (this.opponent.currentHp <= 0) {
-          this.handleOppFaint();
-        } else {
-          setTimeout(() => this.executeOpponentMove(), 700);
-        }
+      this.doPlayerTurn(move, () => {
+        if (this.checkBattleEnd()) return;
+        this.doOpponentTurn(() => {
+          if (this.checkBattleEnd()) return;
+          this.endTurn();
+        });
       });
     } else {
-      this.executeOpponentMove(() => {
-        if (this.player.currentHp <= 0) {
-          this.handlePlayerFaint();
-        } else {
-          setTimeout(() => this.executePlayerMove(move), 700);
-        }
+      this.doOpponentTurn(() => {
+        if (this.checkBattleEnd()) return;
+        this.doPlayerTurn(move, () => {
+          if (this.checkBattleEnd()) return;
+          this.endTurn();
+        });
       });
     }
   }
 
-  executePlayerMove(move, cb) {
+  doPlayerTurn(move, done) {
     if (move.isDodge) {
       this.log(`<span class="arrow">▸</span>${this.player.name.toLowerCase()} slipped into the shadows.`);
       this.player.slipping = true;
-      this.busy = false;
       this.onUpdate();
-      if (cb) setTimeout(cb, 600);
+      setTimeout(done, 700);
       return;
     }
     if (move.isCharge) {
       this.log(`<span class="arrow">▸</span>${this.player.name.toLowerCase()} locked in.`);
       this.player.charged = true;
-      this.busy = false;
       this.onUpdate();
-      if (cb) setTimeout(cb, 600);
+      setTimeout(done, 700);
       return;
     }
-    // strike
     this.log(`<span class="arrow">▸</span>${this.player.name.toLowerCase()} used strike.`);
     setTimeout(() => {
       const result = this.calcDamage(this.player, this.opponent, move);
       if (result.hit) {
-        this.opponent.currentHp = Math.max(0, this.opponent.currentHp - result.dmg);
+        let dmg = result.dmg;
+        if (this.opponent.slipping) {
+          dmg = Math.floor(dmg / 2);
+          this.opponent.slipping = false;
+        }
+        this.opponent.currentHp = Math.max(0, this.opponent.currentHp - dmg);
         this.shake('opp');
         if (result.crit) {
-          this.log(`<span class="arrow">▸</span>critical hit. ${result.dmg} dmg.`);
+          this.log(`<span class="arrow">▸</span>critical. ${dmg} dmg.`);
         } else {
-          this.log(`<span class="arrow">▸</span>it landed. ${result.dmg} dmg.`);
+          this.log(`<span class="arrow">▸</span>it landed. ${dmg} dmg.`);
         }
       } else {
         this.log(`<span class="arrow">▸</span>it didn't land.`);
       }
       this.player.charged = false;
       this.onUpdate();
-      this.busy = false;
-      if (cb) setTimeout(cb, 700);
+      setTimeout(done, 700);
     }, 500);
   }
 
-  executeOpponentMove(cb) {
+  doOpponentTurn(done) {
     const move = this.pickAiMove();
 
     if (move === 'dodge') {
       this.log(`<span class="arrow">▸</span>${this.opponent.name.toLowerCase()} slipped.`);
       this.opponent.slipping = true;
       this.onUpdate();
-      this.busy = false;
-      if (cb) setTimeout(cb, 600);
+      setTimeout(done, 700);
       return;
     }
-
     if (move === 'charge') {
       this.log(`<span class="arrow">▸</span>${this.opponent.name.toLowerCase()} locked in.`);
       this.opponent.charged = true;
       this.onUpdate();
-      this.busy = false;
-      if (cb) setTimeout(cb, 600);
+      setTimeout(done, 700);
       return;
     }
-
     if (move === 'heal') {
       const heal = Math.floor(this.opponent.maxHp * 0.25);
       this.opponent.currentHp = Math.min(this.opponent.maxHp, this.opponent.currentHp + heal);
       this.log(`<span class="arrow">▸</span>${this.opponent.name.toLowerCase()} regrouped. +${heal} hp.`);
       this.onUpdate();
-      this.busy = false;
-      if (cb) setTimeout(cb, 600);
+      setTimeout(done, 700);
       return;
     }
-
-    // strike
     this.log(`<span class="arrow">▸</span>${this.opponent.name.toLowerCase()} struck.`);
     setTimeout(() => {
       const result = this.calcDamage(this.opponent, this.player, window.GAME_DATA.MOVES.strike);
@@ -193,9 +188,50 @@ class Battle {
       }
       this.opponent.charged = false;
       this.onUpdate();
-      this.busy = false;
-      if (cb) setTimeout(cb, 700);
+      setTimeout(done, 700);
     }, 500);
+  }
+
+  checkBattleEnd() {
+    if (this.ended) return true;
+
+    if (this.opponent.currentHp <= 0) {
+      this.log(`<span class="arrow">▸</span>${this.opponent.name.toLowerCase()} fainted.`);
+      if (this.currentOpp + 1 < this.opponents.length) {
+        this.currentOpp++;
+        setTimeout(() => {
+          this.log(`<span class="arrow">▸</span>${this.gym.leader} sent out ${this.opponent.name.toLowerCase()}.`);
+          this.busy = false;
+          this.onUpdate();
+        }, 1100);
+        return true;
+      }
+      this.scheduleEnd(true, false, 1000);
+      return true;
+    }
+
+    if (this.player.currentHp <= 0) {
+      this.log(`<span class="arrow">▸</span>${this.player.name.toLowerCase()} fainted.`);
+      this.scheduleEnd(false, false, 1000);
+      return true;
+    }
+
+    return false;
+  }
+
+  endTurn() {
+    this.busy = false;
+    this.onUpdate();
+  }
+
+  scheduleEnd(won, fled, delay) {
+    if (this.ended) return;
+    this.ended = true;
+    this.busy = true;
+    this.onUpdate();
+    setTimeout(() => {
+      if (this.onEnd) this.onEnd({ won, fled });
+    }, delay);
   }
 
   pickAiMove() {
@@ -214,7 +250,6 @@ class Battle {
         if (r < 0.2) return 'charge';
         return 'strike';
       case 'mirror':
-        // mimics player's last pattern, just randomized aggressive
         if (r < 0.2) return 'dodge';
         if (r < 0.35) return 'charge';
         return 'strike';
@@ -233,7 +268,6 @@ class Battle {
     const maxD = move.maxDmg || 25;
     const hitChance = move.hitChance || 0.8;
 
-    // charged attacks always hit + bonus dmg
     let willHit = Math.random() < hitChance;
     let multiplier = 1;
     if (attacker.charged) {
@@ -244,7 +278,6 @@ class Battle {
     if (!willHit) return { hit: false, dmg: 0, crit: false };
 
     let baseDmg = Math.floor(Math.random() * (maxD - minD + 1)) + minD;
-    // factor in atk relative to baseline 18
     baseDmg = Math.floor(baseDmg * (attacker.stats.atk / 18));
     baseDmg = Math.floor(baseDmg * multiplier);
 
@@ -262,34 +295,6 @@ class Battle {
       el.classList.add('hit');
       setTimeout(() => el.classList.remove('hit'), 400);
     }
-  }
-
-  handleOppFaint() {
-    this.log(`<span class="arrow">▸</span>${this.opponent.name.toLowerCase()} fainted.`);
-    if (this.currentOpp + 1 < this.opponents.length) {
-      // multi-creature fight: send out next
-      this.currentOpp++;
-      setTimeout(() => {
-        this.log(`<span class="arrow">▸</span>${this.gym.leader} sent out ${this.opponent.name.toLowerCase()}.`);
-        this.onUpdate();
-        this.busy = false;
-      }, 1000);
-    } else {
-      // gym cleared
-      setTimeout(() => this.endBattle(true, false), 900);
-    }
-  }
-
-  handlePlayerFaint() {
-    this.log(`<span class="arrow">▸</span>${this.player.name.toLowerCase()} fainted.`);
-    setTimeout(() => this.endBattle(false, false), 900);
-  }
-
-  endBattle(won, fled) {
-    if (this.ended) return;
-    this.ended = true;
-    this.busy = true;
-    if (this.onEnd) this.onEnd({ won, fled });
   }
 }
 

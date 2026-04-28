@@ -78,7 +78,7 @@
   </div>
 </div>
 
-<!-- ============= TITLE CARD (transition after cold open) ============= -->
+<!-- ============= TITLE CARD (transition) ============= -->
 <div id="screen-titlecard" class="screen">
   <div class="title-big">better luck<br>next time</div>
   <button id="title-card-continue" class="btn" style="opacity: 0; transition: opacity 1s; max-width: 280px;">▸ continue</button>
@@ -221,6 +221,26 @@
   <button id="map-enter" class="btn">▸ enter gym 1</button>
 </div>
 
+<!-- ============= LEADER REVEAL ============= -->
+<div id="screen-reveal" class="screen">
+  <div class="sys">
+    <span id="reveal-gym-num">gym 1 / 6</span>
+    <span id="reveal-track">track 07</span>
+  </div>
+
+  <div class="reveal-core">
+    <div class="reveal-pre">▸ leader appeared</div>
+    <div class="reveal-portrait">
+      <img id="reveal-leader-img" src="" alt="">
+    </div>
+    <div class="reveal-name pixel" id="reveal-leader-name">the gatekeeper</div>
+    <div class="reveal-quote serif" id="reveal-quote"></div>
+    <div class="reveal-quote-line serif" id="reveal-quote-line"></div>
+  </div>
+
+  <button id="reveal-continue" class="btn">▸ fight</button>
+</div>
+
 <!-- ============= BATTLE ============= -->
 <div id="screen-battle" class="screen">
   <div class="sys">
@@ -234,7 +254,6 @@
   </div>
 
   <div class="arena">
-    <!-- opponent (top) -->
     <div class="combatant opp">
       <div class="sprite-box">
         <img src="" alt="">
@@ -255,7 +274,6 @@
       </div>
     </div>
 
-    <!-- player (bottom) -->
     <div class="combatant you">
       <div class="sprite-box">
         <img src="" alt="">
@@ -296,7 +314,8 @@
 
   <div class="head">
     <div class="pre">▸ <span id="loss-creature">your starter</span> fainted</div>
-    <h1>better luck<br>next time</h1>
+    <h1>BETTER LUCK<br>NEXT TIME!</h1>
+    <div class="album-cta-pre">— a danny ali album —</div>
   </div>
 
   <div class="card">
@@ -330,8 +349,11 @@
     </div>
   </div>
 
+  <button id="loss-album" class="btn album-btn">▸ stream the album</button>
+
   <div class="actions">
-    <button id="loss-share" class="btn">▸ share to ig story</button>
+    <button id="loss-resume" class="btn" style="display:none">▸ resume run</button>
+    <button id="loss-share" class="btn btn-ghost">share to ig story</button>
     <div class="action-row">
       <button id="loss-again" class="btn btn-ghost">play again</button>
       <button id="loss-exit" class="btn btn-ghost">exit</button>
@@ -395,6 +417,7 @@
 </div>
 
 <script src="scripts/data.js"></script>
+<script src="scripts/supabase.js"></script>
 <script src="scripts/support.js"></script>
 <script src="scripts/battle.js"></script>
 <script src="scripts/game.js"></script>
