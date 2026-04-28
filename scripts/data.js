@@ -45,7 +45,7 @@ const GYMS = [
     quote: '"you don\'t get past me."',
     creature: {
       name: 'STONEMAW',
-      sprite: 'assets/sprites/creature-vesper.png', // placeholder until commissioned
+      sprite: 'assets/sprites/creature-stonemaw.png',
       stats: { hp: 70, atk: 12, spd: 5, luck: 3 }
     },
     aiPattern: 'simple',
@@ -62,7 +62,7 @@ const GYMS = [
     quote: '"keep up."',
     creature: {
       name: 'SPRINTER',
-      sprite: 'assets/sprites/creature-omen.png',
+      sprite: 'assets/sprites/creature-sprinter.png',
       stats: { hp: 75, atk: 14, spd: 12, luck: 5 }
     },
     aiPattern: 'evasive',
@@ -79,12 +79,12 @@ const GYMS = [
     quote: '"we keep each other up."',
     creature: {
       name: 'CHORUS',
-      sprite: 'assets/sprites/creature-hunger.png',
+      sprite: 'assets/sprites/creature-chorus.png',
       stats: { hp: 90, atk: 13, spd: 7, luck: 4 }
     },
     creature2: {
       name: 'CHORUS-II',
-      sprite: 'assets/sprites/creature-hunger.png',
+      sprite: 'assets/sprites/creature-chorus.png',
       stats: { hp: 85, atk: 15, spd: 7, luck: 5 }
     },
     aiPattern: 'multi',
@@ -101,7 +101,7 @@ const GYMS = [
     quote: '"watch this."',
     creature: {
       name: 'FLAREUP',
-      sprite: 'assets/sprites/creature-omen.png',
+      sprite: 'assets/sprites/creature-flareup.png',
       stats: { hp: 95, atk: 20, spd: 10, luck: 8 }
     },
     aiPattern: 'aggressive',
@@ -114,12 +114,12 @@ const GYMS = [
     trackNum: 9,
     leader: 'the rival',
     leaderSprite: 'assets/sprites/leader-5-rival.png',
-    intro: "your reflection sends out your own creature.\nthe rival doesn't speak.",
+    intro: "your reflection sends out something familiar.\nthe rival doesn't speak.",
     quote: '',
     creature: {
-      // mirror match — set at runtime to copy player's starter
-      mirror: true,
-      stats: { hp: 110, atk: 22, spd: 11, luck: 9 }
+      name: 'MIRROR',
+      sprite: 'assets/sprites/creature-mirror.png',
+      stats: { hp: 105, atk: 21, spd: 11, luck: 9 }
     },
     aiPattern: 'mirror',
     badge: 'badge of doubt'
@@ -139,23 +139,68 @@ const GYMS = [
       stats: { hp: 100, atk: 22, spd: 11, luck: 10 }
     },
     creature2: {
-      name: 'NIGHTWORK',
-      sprite: 'assets/sprites/creature-omen.png',
-      stats: { hp: 120, atk: 25, spd: 9, luck: 12 }
+      name: 'LASTWORD',
+      sprite: 'assets/sprites/creature-lastword.png',
+      stats: { hp: 130, atk: 26, spd: 9, luck: 12 }
     },
     aiPattern: 'boss',
     badge: 'champion of aliworld'
   }
 ];
 
-// 5 prizes, claimed in order (cheap to expensive)
+// tiered prizes — each gym unlocks a prize on clear
+// limited prizes are first-come (1 of 1). unlimited can be claimed by everyone who clears the gym.
 const PRIZES = [
-  { id: 'sticker', name: 'sticker pack', deliverable: 'physical' },
-  { id: 'album', name: 'early album link', deliverable: 'digital', link: 'https://symphony.to/dannyali/better-luck-next-time' },
-  { id: 'merch', name: 'free merch pack', deliverable: 'physical', link: 'https://square.link/u/3mgewklo' },
-  { id: 'patreon', name: 'free patreon membership', deliverable: 'manual', link: 'https://patreon.com/c/six5ive' },
-  { id: 'show', name: 'lifetime show entry', deliverable: 'manual' }
+  {
+    id: 'album',
+    gym: 1,
+    name: 'early album link',
+    deliverable: 'digital',
+    limited: false,
+    link: 'https://symphony.to/dannyali/better-luck-next-time'
+  },
+  {
+    id: 'sticker',
+    gym: 2,
+    name: 'sticker pack',
+    deliverable: 'physical',
+    limited: true
+  },
+  {
+    id: 'patreon',
+    gym: 3,
+    name: 'free patreon month',
+    deliverable: 'manual',
+    limited: true,
+    link: 'https://patreon.com/c/six5ive'
+  },
+  {
+    id: 'merch',
+    gym: 4,
+    name: 'free merch pack',
+    deliverable: 'physical',
+    limited: true,
+    link: 'https://square.link/u/3mgewklo'
+  },
+  {
+    id: 'drop',
+    gym: 5,
+    name: 'private drop access',
+    deliverable: 'digital',
+    limited: true
+  },
+  {
+    id: 'show',
+    gym: 6,
+    name: 'lifetime show entry',
+    deliverable: 'manual',
+    limited: true
+  }
 ];
+
+// resume mechanic: gym 4+ losses preserve progress.
+// gyms 1-3 losses reset the run.
+const CHECKPOINT_GYM = 4;
 
 // rotated on loss screens for replayability
 const LOSS_LORE = [
@@ -171,17 +216,17 @@ const LOSS_LORE = [
   'd.a. saw you coming.',
   'the moths know who you were.',
   'you found your way. just not the right way.',
-  'aliworld remembers.'
+  'aliworld remembers.',
+  'lastword had the lastword.',
+  'you can\'t lose what you never had.'
 ];
 
-// in-cold-open, the wild creature you fight (and lose to)
 const COLD_OPEN_CREATURE = {
   name: 'unknown',
   sprite: 'assets/sprites/creature-omen.png',
   stats: { hp: 100, atk: 28, spd: 99, luck: 99 }
 };
 
-// player moves
 const MOVES = {
   strike: {
     name: 'strike',
@@ -209,19 +254,26 @@ const MOVES = {
   }
 };
 
-// audio map — files dropped in /assets/audio/ later
 const AUDIO_MAP = {
-  coldopen: 'assets/audio/01-what-dreams-are-made-of.mp3',
-  trainer: 'assets/audio/03-whats-yo-name.mp3',
-  starter: 'assets/audio/05-what-i-need.mp3',
-  map: 'assets/audio/04-find-my-way.mp3',
-  gym1: 'assets/audio/07-hold-me-back.mp3',
-  gym2: 'assets/audio/08-motion.mp3',
-  gym3: 'assets/audio/06-we-believe.mp3',
-  gym4: 'assets/audio/10-doin-the-most.mp3',
-  gym5: 'assets/audio/09-cant-lose.mp3',
-  gym6: 'assets/audio/11-made-it-off-rap.mp3',
-  ambient: 'assets/audio/02-where-we-been.mp3'
+  coldopen: 'https://res.cloudinary.com/dwyvy2iqq/video/upload/v1777357973/01-what-dreams-are-made-of_ljsxiv.mp3',
+  ambient:  'https://res.cloudinary.com/dwyvy2iqq/video/upload/v1777357974/02-where-we-been_zgy7ue.mp3',
+  trainer:  'https://res.cloudinary.com/dwyvy2iqq/video/upload/v1777357978/03-whats-yo-name_hukajc.mp3',
+  map:      'https://res.cloudinary.com/dwyvy2iqq/video/upload/v1777357983/04-find-my-way_vetqct.mp3',
+  starter:  'https://res.cloudinary.com/dwyvy2iqq/video/upload/v1777357980/05-what-i-need_gavq5o.mp3',
+  gym3:     'https://res.cloudinary.com/dwyvy2iqq/video/upload/v1777357976/06-we-believe_teo2td.mp3',
+  gym1:     'https://res.cloudinary.com/dwyvy2iqq/video/upload/v1777357977/07-hold-me-back_zxgdom.mp3',
+  gym2:     'https://res.cloudinary.com/dwyvy2iqq/video/upload/v1777357975/08-motion_fibdag.mp3',
+  gym5:     'https://res.cloudinary.com/dwyvy2iqq/video/upload/v1777357980/09-cant-lose_hhzesc.mp3',
+  gym4:     'https://res.cloudinary.com/dwyvy2iqq/video/upload/v1777357980/10-doin-the-most_ycvzif.mp3',
+  gym6:     'https://res.cloudinary.com/dwyvy2iqq/video/upload/v1777357980/11-made-it-off-rap_d42yts.mp3',
+  loss:     'https://res.cloudinary.com/dwyvy2iqq/video/upload/v1777357974/02-where-we-been_zgy7ue.mp3',
+  champion: 'https://res.cloudinary.com/dwyvy2iqq/video/upload/v1777357974/02-where-we-been_zgy7ue.mp3'
 };
 
-window.GAME_DATA = { STARTERS, GYMS, PRIZES, LOSS_LORE, COLD_OPEN_CREATURE, MOVES, AUDIO_MAP };
+const ALBUM = {
+  title: 'BETTER LUCK NEXT TIME',
+  artist: 'DANNY ALI',
+  link: 'https://symphony.to/dannyali/better-luck-next-time'
+};
+
+window.GAME_DATA = { STARTERS, GYMS, PRIZES, LOSS_LORE, COLD_OPEN_CREATURE, MOVES, AUDIO_MAP, ALBUM, CHECKPOINT_GYM };
