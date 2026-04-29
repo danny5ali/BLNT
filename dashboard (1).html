@@ -1,0 +1,1082 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>dashboard / aliworld</title>
+<link rel="icon" href="assets/favicon.ico">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Instrument+Serif:ital@0;1&family=Caveat:wght@400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles/base.css">
+<style>
+
+/* ===================== GATE ===================== */
+#gate {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 32px;
+  text-align: center;
+  padding: 40px;
+}
+#gate h1 {
+  font-family: 'Instrument Serif', serif;
+  font-style: italic;
+  font-size: 36px;
+  color: var(--ink);
+}
+#gate .sub {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: var(--ink-dim);
+  text-transform: uppercase;
+}
+#gate input {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 12px;
+  letter-spacing: 2px;
+  padding: 14px 18px;
+  border: 1px solid var(--ink);
+  background: var(--cream-3);
+  color: var(--ink);
+  width: 100%;
+  max-width: 340px;
+  outline: none;
+  text-align: center;
+}
+#gate input:focus { border-color: var(--accent); }
+#gate button {
+  width: 100%;
+  max-width: 340px;
+  padding: 14px 18px;
+  background: var(--ink);
+  color: var(--cream);
+  border: none;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  cursor: pointer;
+  box-shadow: 4px 4px 0 var(--accent);
+}
+#gate .error {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 9px;
+  letter-spacing: 1px;
+  color: var(--accent);
+  text-transform: uppercase;
+  display: none;
+}
+
+/* ===================== DASHBOARD ===================== */
+#dashboard { display: none; }
+.db {
+  max-width: 820px;
+  margin: 0 auto;
+  padding: 28px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.db-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--ink);
+  padding-bottom: 14px;
+}
+.db-head-left { display: flex; flex-direction: column; gap: 6px; }
+.db-pre {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+  letter-spacing: 2px;
+  color: var(--ink-dim);
+  text-transform: uppercase;
+}
+.db-title {
+  font-family: 'Instrument Serif', serif;
+  font-style: italic;
+  font-size: 32px;
+  color: var(--ink);
+  line-height: 1;
+}
+.db-head-right {
+  text-align: right;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+  letter-spacing: 1px;
+  color: var(--ink-dim);
+  text-transform: uppercase;
+  line-height: 1.7;
+}
+.db-head-right .live::before {
+  content: '▮';
+  color: var(--accent);
+  margin-right: 5px;
+  animation: blink 1.4s ease-in-out infinite;
+}
+@keyframes blink { 50% { opacity: 0.2; } }
+.db-head-right .red { color: var(--accent); }
+
+/* metrics */
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+.metric {
+  background: var(--cream-3);
+  padding: 14px 12px;
+  border: 1px solid var(--ink);
+  box-shadow: 3px 3px 0 var(--accent);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.metric-label {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 7px;
+  letter-spacing: 1px;
+  color: var(--ink-dim);
+  text-transform: uppercase;
+}
+.metric-value {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 18px;
+  color: var(--ink);
+  line-height: 1.1;
+}
+.metric-value.red { color: var(--accent); }
+.metric-delta {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 7px;
+  letter-spacing: 1px;
+  color: var(--ink-dim);
+  text-transform: uppercase;
+}
+
+/* section header */
+.sec-h {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  border-bottom: 1px solid var(--ink);
+  padding-bottom: 8px;
+  margin-top: 8px;
+}
+.sec-title {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--ink);
+  text-transform: uppercase;
+}
+.sec-action {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+  letter-spacing: 1px;
+  color: var(--accent);
+  text-transform: uppercase;
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0;
+}
+.sec-action:hover { text-decoration: underline; }
+
+/* prize board */
+.prizes { display: flex; flex-direction: column; }
+.prize-row {
+  display: grid;
+  grid-template-columns: 48px 1fr auto auto auto;
+  gap: 12px;
+  padding: 11px 0;
+  border-bottom: 1px dashed var(--ink-dim);
+  align-items: center;
+}
+.prize-row:last-child { border-bottom: none; }
+.prize-gym {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 9px;
+  color: var(--accent);
+  letter-spacing: 1px;
+}
+.prize-info { display: flex; flex-direction: column; gap: 2px; }
+.prize-name {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 9px;
+  letter-spacing: 1px;
+  color: var(--ink);
+  text-transform: uppercase;
+}
+.prize-sub {
+  font-family: 'Instrument Serif', serif;
+  font-style: italic;
+  font-size: 13px;
+  color: var(--ink-dim);
+  margin-top: 1px;
+}
+.prize-count {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 7px;
+  letter-spacing: 1px;
+  color: var(--ink-dim);
+  text-transform: uppercase;
+  text-align: right;
+  line-height: 1.5;
+}
+.prize-count strong {
+  font-size: 10px;
+  color: var(--ink);
+  display: block;
+  margin-top: 2px;
+  font-weight: 400;
+}
+.prize-count.red strong { color: var(--accent); }
+.pz-status {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 7px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 4px 8px;
+  border: 1px solid currentColor;
+  white-space: nowrap;
+}
+.pz-status.live { color: var(--accent); }
+.pz-status.claimed { color: var(--ink); }
+.pz-status.sent { color: #6b8a4a; }
+.pz-status.queued { color: var(--ink-dim); }
+.pz-swap {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 7px;
+  letter-spacing: 1px;
+  color: var(--accent);
+  text-transform: uppercase;
+  background: none;
+  border: 1px solid var(--accent);
+  padding: 5px 8px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.pz-swap:hover { background: var(--accent); color: var(--cream); }
+
+/* winners */
+.winners { display: flex; flex-direction: column; }
+.winner-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto auto;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px dashed var(--ink-dim);
+  align-items: center;
+}
+.winner-row:last-child { border-bottom: none; }
+.wg-tag {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+  color: var(--accent);
+  letter-spacing: 1px;
+  background: rgba(179, 42, 31, 0.08);
+  padding: 4px 7px;
+  border: 1px solid var(--accent);
+}
+.wname {
+  font-family: 'Instrument Serif', serif;
+  font-style: italic;
+  font-size: 17px;
+  color: var(--ink);
+}
+.wemail {
+  display: block;
+  font-family: 'Press Start 2P', monospace;
+  font-style: normal;
+  font-size: 7px;
+  color: var(--ink-dim);
+  letter-spacing: 1px;
+  margin-top: 2px;
+}
+.wprize {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 7px;
+  letter-spacing: 1px;
+  color: var(--ink);
+  text-transform: uppercase;
+  text-align: right;
+}
+.wstatus {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 7px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 3px 6px;
+  border: 1px solid currentColor;
+  white-space: nowrap;
+}
+.wstatus.ok { color: #6b8a4a; }
+.wstatus.warn { color: var(--accent); animation: blink 2s ease-in-out infinite; }
+.wstatus.dim { color: var(--ink-dim); }
+.w-action {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+  background: var(--ink);
+  color: var(--cream);
+  border: none;
+  padding: 6px 10px;
+  box-shadow: 2px 2px 0 var(--accent);
+  white-space: nowrap;
+}
+.w-action:hover { transform: translate(1px,1px); box-shadow: 1px 1px 0 var(--accent); }
+.w-action.done {
+  background: transparent;
+  color: var(--ink-dim);
+  box-shadow: none;
+  border: 1px solid var(--ink-dim);
+}
+
+/* funnel */
+.funnel { display: flex; flex-direction: column; gap: 8px; padding-top: 4px; }
+.funnel-row {
+  display: grid;
+  grid-template-columns: 110px 1fr 64px;
+  gap: 12px;
+  align-items: center;
+}
+.funnel-label {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 7px;
+  letter-spacing: 1px;
+  color: var(--ink-dim);
+  text-transform: uppercase;
+}
+.funnel-bar {
+  height: 14px;
+  background: rgba(28, 24, 21, 0.06);
+  border: 1px solid var(--ink-dim);
+}
+.funnel-fill { height: 100%; background: var(--ink); }
+.funnel-fill.cp { background: var(--accent); }
+.funnel-count {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+  color: var(--ink);
+  text-align: right;
+}
+.checkpoint-label {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Instrument Serif', serif;
+  font-style: italic;
+  font-size: 13px;
+  color: var(--accent);
+  padding: 4px 0;
+}
+.checkpoint-label::after {
+  content: '';
+  flex: 1;
+  border-top: 1px dashed var(--accent);
+}
+
+/* starters */
+.starters { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.starter-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 14px 12px;
+  background: var(--cream-3);
+  border: 1px solid var(--ink);
+}
+.s-name {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 11px;
+  letter-spacing: 1px;
+  color: var(--ink);
+  text-transform: uppercase;
+}
+.s-pct {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 18px;
+  color: var(--ink);
+}
+.starter-stat.top .s-pct { color: var(--accent); }
+.s-count {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 7px;
+  color: var(--ink-dim);
+  text-transform: uppercase;
+}
+.s-track {
+  font-family: 'Instrument Serif', serif;
+  font-style: italic;
+  font-size: 13px;
+  color: var(--ink-dim);
+}
+.starter-stat.top .s-track { color: var(--accent); }
+
+.db-footnote {
+  font-family: 'Instrument Serif', serif;
+  font-style: italic;
+  font-size: 14px;
+  color: var(--ink-dim);
+  text-align: center;
+  padding-top: 14px;
+  border-top: 1px dashed var(--ink-dim);
+}
+
+/* modal overlay */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(28, 24, 21, 0.6);
+  z-index: 500;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: var(--cream-3);
+  border: 1px solid var(--ink);
+  box-shadow: 8px 8px 0 var(--accent);
+  padding: 28px 24px;
+  max-width: 460px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.modal-title {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: var(--ink);
+  text-transform: uppercase;
+}
+.modal-sub {
+  font-family: 'Instrument Serif', serif;
+  font-style: italic;
+  font-size: 15px;
+  color: var(--ink-dim);
+  margin-top: -8px;
+}
+.modal label {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+  letter-spacing: 1px;
+  color: var(--ink-dim);
+  text-transform: uppercase;
+  display: block;
+  margin-bottom: 6px;
+}
+.modal input, .modal select {
+  width: 100%;
+  font-family: 'Instrument Serif', serif;
+  font-style: italic;
+  font-size: 18px;
+  padding: 8px 0;
+  border: none;
+  border-bottom: 1px solid var(--ink);
+  background: transparent;
+  color: var(--ink);
+  outline: none;
+}
+.modal-actions { display: flex; gap: 10px; }
+.modal-save {
+  flex: 1;
+  padding: 12px;
+  background: var(--ink);
+  color: var(--cream);
+  border: none;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+  box-shadow: 3px 3px 0 var(--accent);
+}
+.modal-cancel {
+  padding: 12px 16px;
+  background: transparent;
+  color: var(--ink-dim);
+  border: 1px solid var(--ink-dim);
+  font-family: 'Press Start 2P', monospace;
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+</style>
+</head>
+<body>
+
+<!-- ============= GATE ============= -->
+<div id="gate">
+  <div>
+    <div class="sub">aliworld back office</div>
+    <h1>better luck dashboard</h1>
+  </div>
+  <input id="pw-input" type="password" placeholder="password" autocomplete="off">
+  <div id="pw-error" class="error">wrong password</div>
+  <button onclick="checkPassword()">▸ enter</button>
+</div>
+
+<!-- ============= DASHBOARD ============= -->
+<div id="dashboard">
+<div class="db">
+
+  <div class="db-head">
+    <div class="db-head-left">
+      <div class="db-pre">▸ aliworld back office</div>
+      <h1 class="db-title">better luck dashboard</h1>
+    </div>
+    <div class="db-head-right">
+      <span class="live">live</span><br>
+      <span class="red" id="db-prizes-left">— prizes left</span><br>
+      <button class="sec-action" onclick="logout()" style="margin-top:6px">▸ logout</button>
+    </div>
+  </div>
+
+  <!-- metrics -->
+  <div class="metrics">
+    <div class="metric">
+      <div class="metric-label">plays today</div>
+      <div class="metric-value" id="db-plays-today">—</div>
+      <div class="metric-delta" id="db-plays-delta">loading</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">total plays</div>
+      <div class="metric-value" id="db-plays-total">—</div>
+      <div class="metric-delta">since launch</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">emails captured</div>
+      <div class="metric-value red" id="db-emails">—</div>
+      <div class="metric-delta" id="db-conv">— conv rate</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">prizes claimed</div>
+      <div class="metric-value" id="db-prizes-claimed">— / 6</div>
+      <div class="metric-delta" id="db-avg-runs">avg — runs</div>
+    </div>
+  </div>
+
+  <!-- prize board -->
+  <div class="sec-h">
+    <span class="sec-title">prize board · tiered</span>
+  </div>
+  <div class="prizes" id="prize-board"></div>
+
+  <!-- winners -->
+  <div class="sec-h">
+    <span class="sec-title">winners · needs action</span>
+    <button class="sec-action" onclick="exportCSV()">▸ export winners</button>
+  </div>
+  <div class="winners" id="winners-list"></div>
+
+  <!-- all emails captured -->
+  <div class="sec-h">
+    <span class="sec-title">all emails · captured</span>
+    <button class="sec-action" onclick="exportAllEmails()">▸ export all (csv)</button>
+  </div>
+  <div class="winners" id="all-emails-list"></div>
+
+  <!-- funnel -->
+  <div class="sec-h">
+    <span class="sec-title">drop off · where they fall</span>
+  </div>
+  <div class="funnel" id="funnel"></div>
+
+  <!-- starter picks -->
+  <div class="sec-h">
+    <span class="sec-title">starter picks · which song hits</span>
+  </div>
+  <div class="starters" id="starter-picks"></div>
+  <div class="db-footnote" id="db-insight">—</div>
+
+</div>
+</div>
+
+<!-- ============= SWAP PRIZE MODAL ============= -->
+<div class="modal-overlay" id="swap-modal">
+  <div class="modal">
+    <div class="modal-title">swap prize</div>
+    <div class="modal-sub" id="swap-modal-gym">gym — prize</div>
+    <div>
+      <label>new prize name</label>
+      <input id="swap-name" type="text" placeholder="e.g. signed vinyl">
+    </div>
+    <div>
+      <label>delivery type</label>
+      <select id="swap-type">
+        <option value="digital">digital (auto-link)</option>
+        <option value="physical">physical (manual ship)</option>
+        <option value="manual">manual (you handle)</option>
+      </select>
+    </div>
+    <div>
+      <label>link (optional)</label>
+      <input id="swap-link" type="text" placeholder="https://...">
+    </div>
+    <div class="modal-actions">
+      <button class="modal-save" onclick="saveSwap()">▸ save prize</button>
+      <button class="modal-cancel" onclick="closeSwapModal()">cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============= supabase client (same as game) =============
+const SUPABASE_URL = 'https://pplpihxmkucmmmkciypf.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBwbHBpaHhta3VjbW1ta2NpeXBmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczMjg3MDksImV4cCI6MjA5MjkwNDcwOX0.Kuyazq6nc-APPS2aOpHw4Bhls1R9-Ut7FSClgxa8Adw';
+
+async function dbReq(path, opts = {}) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    headers: {
+      'apikey': SUPABASE_ANON_KEY,
+      'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+      'Content-Type': 'application/json',
+      ...opts.headers
+    },
+    ...opts
+  });
+  if (!res.ok) return null;
+  const text = await res.text();
+  return text ? JSON.parse(text) : null;
+}
+
+async function getCount(table, filter = '') {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?select=id${filter}`, {
+    headers: {
+      'apikey': SUPABASE_ANON_KEY,
+      'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+      'Prefer': 'count=exact',
+      'Range-Unit': 'items',
+      'Range': '0-0'
+    }
+  });
+  const cr = res.headers.get('content-range');
+  return cr ? parseInt(cr.split('/')[1]) : 0;
+}
+
+// ============= password gate =============
+const DASHBOARD_PASSWORD = 'aliworld2024';
+
+function checkPassword() {
+  const pw = document.getElementById('pw-input').value;
+  if (pw === DASHBOARD_PASSWORD) {
+    document.getElementById('gate').style.display = 'none';
+    document.getElementById('dashboard').style.display = 'block';
+    loadDashboard();
+  } else {
+    document.getElementById('pw-error').style.display = 'block';
+    document.getElementById('pw-input').value = '';
+  }
+}
+
+document.getElementById('pw-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') checkPassword();
+});
+
+function logout() {
+  document.getElementById('gate').style.display = 'flex';
+  document.getElementById('dashboard').style.display = 'none';
+}
+
+// ============= prize data =============
+const PRIZES = [
+  { id: 'album', gym: 1, name: 'early album link', sub: 'unlimited · digital', limited: false, link: 'https://symphony.to/dannyali/better-luck-next-time' },
+  { id: 'sticker', gym: 2, name: 'sticker pack', sub: 'limited · 1 of 1', limited: true },
+  { id: 'patreon', gym: 3, name: 'free patreon month', sub: 'limited · 1 of 1', limited: true, link: 'https://patreon.com/c/six5ive' },
+  { id: 'merch', gym: 4, name: 'free merch pack', sub: 'limited · 1 of 1', limited: true, link: 'https://square.link/u/3mgewklo' },
+  { id: 'drop', gym: 5, name: 'private drop access', sub: 'limited · 1 of 1', limited: true },
+  { id: 'show', gym: 6, name: 'lifetime show entry', sub: 'limited · champion only', limited: true },
+];
+
+// ============= load dashboard from supabase =============
+async function loadDashboard() {
+  showToast('loading...');
+  try {
+    const [
+      totalPlays,
+      playsToday,
+      allPrizes,
+      fallCounts,
+      starterData,
+      allPlays
+    ] = await Promise.all([
+      getCount('plays'),
+      getCountToday(),
+      dbReq('prizes_awarded?order=created_at.desc'),
+      dbReq('fallen_log?select=gym'),
+      dbReq('plays?select=starter'),
+      dbReq('plays?select=name,email,starter,created_at&order=created_at.desc&limit=200')
+    ]);
+
+    renderMetrics(totalPlays, playsToday, allPrizes);
+    renderPrizeBoard(allPrizes);
+    renderWinners(allPrizes);
+    renderAllEmails(allPlays);
+    renderFunnel(totalPlays, fallCounts);
+    renderStarters(starterData);
+  } catch (e) {
+    console.error('dashboard load error:', e);
+    showToast('error loading data — check console');
+  }
+}
+
+async function getCountToday() {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return getCount('plays', `&created_at=gte.${today.toISOString()}`);
+}
+
+// ============= metrics =============
+function renderMetrics(totalPlays, playsToday, allPrizes) {
+  const limitedPrizes = PRIZES.filter(p => p.limited);
+  const claimed = (allPrizes || []).filter(p => p.limited).length;
+  const remaining = limitedPrizes.length - claimed;
+  const emails = totalPlays; // one email per play record
+
+  document.getElementById('db-plays-today').textContent = playsToday.toLocaleString();
+  document.getElementById('db-plays-delta').textContent = 'today';
+  document.getElementById('db-plays-total').textContent = totalPlays.toLocaleString();
+  document.getElementById('db-emails').textContent = emails.toLocaleString();
+  document.getElementById('db-conv').textContent = totalPlays > 0
+    ? Math.round(emails / totalPlays * 100) + '% conv'
+    : '—';
+  document.getElementById('db-prizes-claimed').textContent = claimed + ' / ' + limitedPrizes.length;
+  document.getElementById('db-prizes-left').textContent = remaining + ' prizes left';
+  document.getElementById('db-avg-runs').textContent = claimed > 0
+    ? `avg ${Math.round(totalPlays / claimed)} runs`
+    : 'none yet';
+}
+
+// ============= prize board =============
+let swapGymNum = null;
+
+function renderPrizeBoard(allPrizes) {
+  const board = document.getElementById('prize-board');
+  board.innerHTML = '';
+
+  PRIZES.forEach(prize => {
+    const claimEntry = (allPrizes || []).find(p => p.prize_id === prize.id && p.limited);
+    const awardCount = (allPrizes || []).filter(p => p.prize_id === prize.id).length;
+
+    let statusHtml, countHtml;
+    if (!prize.limited) {
+      statusHtml = `<span class="pz-status live">live</span>`;
+      countHtml = `<div class="prize-count">claimed<strong>${awardCount}×</strong></div>`;
+    } else if (claimEntry) {
+      statusHtml = `<span class="pz-status ${claimEntry.sent ? 'sent' : 'claimed'}">${claimEntry.sent ? 'sent ✓' : 'claimed'}</span>`;
+      countHtml = `<div class="prize-count red">winner<strong>${claimEntry.winner_name || '—'}</strong></div>`;
+    } else {
+      statusHtml = `<span class="pz-status live">live</span>`;
+      countHtml = `<div class="prize-count">status<strong>open</strong></div>`;
+    }
+
+    const row = document.createElement('div');
+    row.className = 'prize-row';
+    row.innerHTML = `
+      <span class="prize-gym">gym ${prize.gym}</span>
+      <div class="prize-info">
+        <div class="prize-name">${prize.name}</div>
+        <div class="prize-sub">${prize.sub}</div>
+      </div>
+      ${countHtml}
+      ${statusHtml}
+      <button class="pz-swap" onclick="openSwapModal(${prize.gym})">▸ swap</button>
+    `;
+    board.appendChild(row);
+  });
+}
+
+// ============= winners =============
+function renderWinners(allPrizes) {
+  const list = document.getElementById('winners-list');
+
+  if (!allPrizes || !allPrizes.length) {
+    list.innerHTML = '<div style="font-family: \'Instrument Serif\', serif; font-style: italic; font-size: 16px; color: var(--ink-dim); padding: 12px 0;">no prizes awarded yet</div>';
+    return;
+  }
+
+  list.innerHTML = '';
+  allPrizes.forEach(entry => {
+    const prize = PRIZES.find(p => p.id === entry.prize_id);
+    const gymNum = prize ? prize.gym : '?';
+    const timeDiff = Date.now() - new Date(entry.created_at).getTime();
+    const minsAgo = Math.floor(timeDiff / 60000);
+    const timeStr = minsAgo < 60 ? `${minsAgo}m ago`
+      : minsAgo < 1440 ? `${Math.floor(minsAgo / 60)}h ago`
+      : `${Math.floor(minsAgo / 1440)}d ago`;
+
+    const followupStatus = entry.sent
+      ? '<span class="wstatus ok">sent ✓</span>'
+      : '<span class="wstatus warn">needs action</span>';
+    const actionBtn = entry.sent
+      ? '<button class="w-action done">done ✓</button>'
+      : `<button class="w-action" onclick="markSent('${entry.id}')">▸ send</button>`;
+
+    const row = document.createElement('div');
+    row.className = 'winner-row';
+    row.innerHTML = `
+      <span class="wg-tag">gym ${gymNum}</span>
+      <div>
+        <span class="wname">${entry.winner_name || 'anonymous'}</span>
+        <span class="wemail">${entry.email} · ${timeStr}</span>
+      </div>
+      <span class="wprize">${entry.prize_name}</span>
+      ${followupStatus}
+      ${actionBtn}
+    `;
+    list.appendChild(row);
+  });
+}
+
+async function markSent(id) {
+  await dbReq(`prizes_awarded?id=eq.${id}`, {
+    method: 'PATCH',
+    headers: { 'Prefer': 'return=minimal' },
+    body: JSON.stringify({ sent: true })
+  });
+  loadDashboard();
+}
+
+// ============= all emails =============
+function renderAllEmails(plays) {
+  const list = document.getElementById('all-emails-list');
+  if (!plays || !plays.length) {
+    list.innerHTML = '<div style="font-family: \'Instrument Serif\', serif; font-style: italic; font-size: 16px; color: var(--ink-dim); padding: 12px 0;">no emails captured yet</div>';
+    return;
+  }
+  list.innerHTML = '';
+  // dedupe by email, keep most recent
+  const seen = new Set();
+  const unique = [];
+  plays.forEach(p => {
+    if (!seen.has(p.email)) {
+      seen.add(p.email);
+      unique.push(p);
+    }
+  });
+  unique.slice(0, 50).forEach(p => {
+    const timeDiff = Date.now() - new Date(p.created_at).getTime();
+    const minsAgo = Math.floor(timeDiff / 60000);
+    const timeStr = minsAgo < 60 ? `${minsAgo}m ago`
+      : minsAgo < 1440 ? `${Math.floor(minsAgo / 60)}h ago`
+      : `${Math.floor(minsAgo / 1440)}d ago`;
+
+    const row = document.createElement('div');
+    row.className = 'winner-row';
+    row.innerHTML = `
+      <span class="wg-tag" style="background:transparent;color:var(--ink-dim);border-color:var(--ink-dim)">${(p.starter || '?').toUpperCase()}</span>
+      <div>
+        <span class="wname">${p.name || 'anonymous'}</span>
+        <span class="wemail">${p.email} · ${timeStr}</span>
+      </div>
+      <span class="wprize"></span>
+      <span class="wstatus dim">captured</span>
+      <span></span>
+    `;
+    list.appendChild(row);
+  });
+  if (unique.length > 50) {
+    const more = document.createElement('div');
+    more.style.cssText = 'font-family: "Instrument Serif", serif; font-style: italic; font-size: 14px; color: var(--ink-dim); padding: 12px 0; text-align: center;';
+    more.textContent = `+ ${unique.length - 50} more · use export csv to download all`;
+    list.appendChild(more);
+  }
+}
+
+async function exportAllEmails() {
+  const plays = await dbReq('plays?select=name,email,starter,created_at&order=created_at.desc');
+  if (!plays || !plays.length) return showToast('nothing to export');
+  // dedupe
+  const seen = new Set();
+  const unique = [];
+  plays.forEach(p => {
+    if (!seen.has(p.email)) {
+      seen.add(p.email);
+      unique.push(p);
+    }
+  });
+  const rows = [['name', 'email', 'starter', 'first_played']];
+  unique.forEach(p => {
+    rows.push([p.name || '', p.email || '', p.starter || '', p.created_at]);
+  });
+  const csv = rows.map(r => r.map(v => `"${v}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `aliworld-all-emails-${Date.now()}.csv`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  showToast(`exported ${unique.length} unique emails`);
+}
+
+// ============= funnel =============
+function renderFunnel(totalPlays, fallData) {
+  const el = document.getElementById('funnel');
+  const gymCounts = {};
+  (fallData || []).forEach(r => {
+    gymCounts[r.gym] = (gymCounts[r.gym] || 0) + 1;
+  });
+
+  let running = totalPlays;
+  const rows = [];
+  rows.push({ label: 'trainer card', n: totalPlays, cp: false });
+  for (let g = 1; g <= 6; g++) {
+    running -= (gymCounts[g] || 0);
+    if (g === 4) rows.push({ checkpoint: true });
+    rows.push({ label: `gym ${g}`, n: Math.max(0, running), cp: g >= 4 });
+  }
+  rows.push({ label: 'champion', n: Math.max(0, running), cp: false });
+
+  el.innerHTML = '';
+  rows.forEach(r => {
+    if (r.checkpoint) {
+      const div = document.createElement('div');
+      div.className = 'checkpoint-label';
+      div.textContent = 'checkpoint · resumes unlock here';
+      el.appendChild(div);
+      return;
+    }
+    const pct = totalPlays > 0 ? Math.max(1, Math.round(r.n / totalPlays * 100)) : 0;
+    const div = document.createElement('div');
+    div.className = 'funnel-row';
+    div.innerHTML = `
+      <span class="funnel-label">${r.label}</span>
+      <div class="funnel-bar"><div class="funnel-fill${r.cp ? ' cp' : ''}" style="width:${pct}%"></div></div>
+      <span class="funnel-count">${r.n}</span>
+    `;
+    el.appendChild(div);
+  });
+}
+
+// ============= starter picks =============
+function renderStarters(starterData) {
+  const el = document.getElementById('starter-picks');
+  const insight = document.getElementById('db-insight');
+  const picks = { vesper: 0, omen: 0, hunger: 0 };
+  (starterData || []).forEach(r => {
+    if (r.starter && picks[r.starter] !== undefined) picks[r.starter]++;
+  });
+  const total = Object.values(picks).reduce((a, b) => a + b, 0) || 1;
+  const topId = Object.entries(picks).sort((a, b) => b[1] - a[1])[0][0];
+
+  const starters = [
+    { id: 'vesper', track: '— where we been' },
+    { id: 'omen', track: '— find my way' },
+    { id: 'hunger', track: '— what i need' },
+  ];
+
+  el.innerHTML = '';
+  starters.forEach(s => {
+    const n = picks[s.id] || 0;
+    const pct = Math.round(n / total * 100);
+    const div = document.createElement('div');
+    div.className = 'starter-stat' + (s.id === topId ? ' top' : '');
+    div.innerHTML = `
+      <div class="s-name">${s.id}</div>
+      <div class="s-pct">${pct}%</div>
+      <div class="s-count">${n} pick${n !== 1 ? 's' : ''}</div>
+      <div class="s-track">${s.track}</div>
+    `;
+    el.appendChild(div);
+  });
+
+  const trackNames = { vesper: 'where we been', omen: 'find my way', hunger: 'what i need' };
+  insight.textContent = total > 1
+    ? `"${trackNames[topId]}" is your strongest track. lead with it.`
+    : 'no starter data yet — check back after launch.';
+}
+
+// ============= swap prize modal =============
+function openSwapModal(gymNum) {
+  swapGymNum = gymNum;
+  const prize = PRIZES.find(p => p.gym === gymNum);
+  document.getElementById('swap-modal-gym').textContent = `gym ${gymNum} · currently: ${prize.name}`;
+  document.getElementById('swap-name').value = prize.name;
+  document.getElementById('swap-link').value = prize.link || '';
+  document.getElementById('swap-type').value = prize.limited
+    ? (prize.link ? 'digital' : 'physical')
+    : 'digital';
+  document.getElementById('swap-modal').classList.add('open');
+}
+
+function closeSwapModal() {
+  document.getElementById('swap-modal').classList.remove('open');
+  swapGymNum = null;
+}
+
+function saveSwap() {
+  const prize = PRIZES.find(p => p.gym === swapGymNum);
+  if (!prize) return;
+  prize.name = document.getElementById('swap-name').value.trim() || prize.name;
+  prize.link = document.getElementById('swap-link').value.trim() || undefined;
+  closeSwapModal();
+  loadDashboard();
+  showToast('prize updated. update data.js in the game too.');
+}
+
+// ============= export csv =============
+async function exportCSV() {
+  const allPrizes = await dbReq('prizes_awarded?order=created_at.desc');
+  if (!allPrizes) return showToast('nothing to export');
+  const rows = [['name', 'email', 'prize', 'gym', 'time', 'sent']];
+  allPrizes.forEach(a => {
+    const prize = PRIZES.find(p => p.id === a.prize_id);
+    rows.push([
+      a.winner_name || '',
+      a.email || '',
+      a.prize_name || '',
+      prize ? prize.gym : '?',
+      a.created_at,
+      a.sent ? 'yes' : 'no'
+    ]);
+  });
+  const csv = rows.map(r => r.map(v => `"${v}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `aliworld-winners-${Date.now()}.csv`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+// ============= toast =============
+function showToast(msg) {
+  const existing = document.querySelector('.dash-toast');
+  if (existing) existing.remove();
+  const t = document.createElement('div');
+  t.className = 'dash-toast';
+  t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--cream);padding:12px 20px;font-family:"Press Start 2P",monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;z-index:999;box-shadow:4px 4px 0 var(--accent);white-space:nowrap;';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+
+// ============= auto-refresh every 30s =============
+setInterval(() => {
+  if (document.getElementById('dashboard').style.display !== 'none') {
+    loadDashboard();
+  }
+}, 30000);
+
+
+</script>
+</body>
+</html>
